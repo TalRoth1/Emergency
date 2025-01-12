@@ -39,7 +39,7 @@ public class Reactor<T> implements Server<T> {
     public void serve() {
 	selectorThread = Thread.currentThread();
         try (Selector selector = Selector.open();
-                ServerSocketChannel serverSock = ServerSocketChannel.open()) {
+            ServerSocketChannel serverSock = ServerSocketChannel.open()) {
 
             this.selector = selector; //just to be able to close
 

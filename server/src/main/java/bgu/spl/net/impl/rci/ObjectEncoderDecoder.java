@@ -58,7 +58,8 @@ public class ObjectEncoderDecoder implements MessageEncoderDecoder<Serializable>
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
             //placeholder for the object size
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 4; i++)
+            {
                 bytes.write(0);
             }
 
@@ -71,7 +72,9 @@ public class ObjectEncoderDecoder implements MessageEncoderDecoder<Serializable>
             ByteBuffer.wrap(result).putInt(result.length - 4);
             return result;
 
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             throw new IllegalArgumentException("cannot serialize object", ex);
         }
     }

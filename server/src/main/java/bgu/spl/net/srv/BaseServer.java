@@ -53,7 +53,8 @@ public abstract class BaseServer<T> implements Server<T> {
 
     protected abstract void execute(BlockingConnectionHandler<T>  handler);
     
-    private int getnerateConnectionId(){
+    private int getnerateConnectionId()
+    {
         return this.connectionId++;
     }
 }

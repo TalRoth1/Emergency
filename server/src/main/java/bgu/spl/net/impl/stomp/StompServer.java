@@ -16,16 +16,10 @@ public class StompServer {
         } 
         else if (serverType.equalsIgnoreCase("reactor"))
         {
-            server = Server.reactor(
-                    Runtime.getRuntime().availableProcessors(),
-                    port,
-                    StompMessagingProtocolimp::new,
-                    StompEncoderDecoder::new
-            );
+            server = Server.reactor(Runtime.getRuntime().availableProcessors(), port, StompMessagingProtocolimp::new, StompEncoderDecoder::new);
         } else {
             throw new IllegalArgumentException("Invalid server type");
         }
-
         server.serve();
     }
 }

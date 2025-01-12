@@ -1,7 +1,6 @@
 package bgu.spl.net.srv;
 
 import bgu.spl.net.api.MessagingProtocol;
-import bgu.spl.net.api.StompMessagingProtocol;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -13,13 +12,15 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
     private static ConcurrentHashMap<String, String> users = new ConcurrentHashMap<>();
 
     @Override
-    public void start(int connectionId, Connections<String> connections) {
+    public void start(int connectionId, Connections<String> connections)
+    {
         this.connectionId = connectionId;
         this.connections = connections;
     }
 
     @Override
-    public String process(String message) {
+    public String process(String message)
+    {
         String[] lines = message.split("\n");
         String command = lines[0];
         switch (command) {
@@ -39,11 +40,13 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
     }
 
     @Override
-    public boolean shouldTerminate() {
+    public boolean shouldTerminate() 
+    {
         return shouldTerminate;
     }
 
-    private String handleConnect(String[] lines) {
+    private String handleConnect(String[] lines)
+    {
         String login = null, passcode = null;
         for (String line : lines) {
             if (line.startsWith("login:")) login = line.substring(6);
@@ -74,7 +77,8 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
         return "RECEIPT\nreceipt-id:" + id + "\n\n";
     }
 
-    private String handleUnsubscribe(String[] lines) {
+    private String handleUnsubscribe(String[] lines)
+    {
         String id = null;
         for (String line : lines) {
             if (line.startsWith("id:")) id = line.substring(3);

@@ -8,7 +8,8 @@ public class StompEncoderDecoder implements MessageEncoderDecoder<String>{
     private String result = null;
 
     @Override
-    public String decodeNextByte(byte nextByte) {
+    public String decodeNextByte(byte nextByte)
+    {
         if (nextByte == '\u0000') {
             result = new String(bytes, 0, len, java.nio.charset.StandardCharsets.UTF_8);
             len = 0;
