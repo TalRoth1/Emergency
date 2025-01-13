@@ -33,10 +33,11 @@ public abstract class BaseServer<T> implements Server<T> {
 
             while (!Thread.currentThread().isInterrupted()) {
 
+                int connectionId = getnerateConnectionId();
                 Socket clientSock = serverSock.accept();
-
+                System.out.println("Client connected" + clientSock.getRemoteSocketAddress().toString());
                 BlockingConnectionHandler<T> handler = new BlockingConnectionHandler<>(clientSock, encdecFactory.get(), protocolFactory.get());
-                connections.addClient(getnerateConnectionId(), handler);
+                connections.addClient(connectionId, handler);
                 execute(handler);
             }
         } catch (IOException ex) {

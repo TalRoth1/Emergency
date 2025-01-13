@@ -11,6 +11,14 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
     private boolean shouldTerminate = false;
     private static ConcurrentHashMap<String, String> users = new ConcurrentHashMap<>();
 
+    public StompMessagingProtocolimp()
+    {
+    }
+    public StompMessagingProtocolimp(int connectionId, Connections<String> connections)
+    {
+        this.connectionId = connectionId;
+        this.connections = connections;
+    }
     @Override
     public void start(int connectionId, Connections<String> connections)
     {
@@ -73,7 +81,8 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
         if (destination == null || id == null) {
             return createErrorFrame("Missing destination or id");
         }
-        connections.subscribe(destination, connectionId);
+        if(connections != null)
+            connections.subscribe(destination, connectionId);
         return "RECEIPT\nreceipt-id:" + id + "\n\n";
     }
 
@@ -86,7 +95,8 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
         if (id == null) {
             return createErrorFrame("Missing id");
         }
-        connections.unsubscribe(id, connectionId);
+        if(connections != null)
+            connections.unsubscribe(id, connectionId);
         return "RECEIPT\nreceipt-id:" + id + "\n\n";
     }
 
@@ -99,7 +109,8 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
         if (destination == null || body == null) {
             return createErrorFrame("Missing destination or body");
         }
-        connections.send(destination, body);
+        if(connections != null)
+            connections.send(destination, body);
         return null; // No response needed
     }
 
@@ -109,7 +120,8 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
             if (line.startsWith("receipt:")) receiptId = line.substring(8);
         }
         shouldTerminate = true;
-        connections.disconnect(connectionId);
+        if(connections != null)
+            connections.disconnect(connectionId);
         return "RECEIPT\nreceipt-id:" + receiptId + "\n\n";
     }
 
