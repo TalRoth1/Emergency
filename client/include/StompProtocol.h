@@ -7,4 +7,6 @@ class StompProtocol
 {
 private:
 public:
+    std::string encodeFrame(const std::string &command, const std::string &body);
+    std::string decodeFrame(const std::string &frame);
 };
