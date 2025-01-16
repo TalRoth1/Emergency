@@ -13,6 +13,7 @@ public class StompConnections<T> implements Connections<T> {
     public StompConnections() {
         clients = new ConcurrentHashMap<>();
         topicSubscribers = new ConcurrentHashMap<>();
+        messages= new ConcurrentHashMap<>();
     }
 
     @Override
