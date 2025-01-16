@@ -92,17 +92,22 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
 
     private String handleSend(String[] lines) {
         String destination = null, body = null;
+        String user = null;
+    
         for (String line : lines) {
             if (line.startsWith("destination:")) destination = line.substring(12);
-            if (!line.contains(":")) body = line;
+            else if (line.startsWith("user:")) user = line.substring(5);
+            else if (!line.contains(":")) body = line;
         }
-        if (destination == null || body == null) {
-            return createErrorFrame("Missing destination or body");
+    
+        if (destination == null || body == null || user == null) {
+            return createErrorFrame("Missing destination, body, or user");
         }
+    
         connections.send(destination, body);
+        connections.saveMessage(destination, user, body);
         return null; // No response needed
     }
-
     private String handleDisconnect(String[] lines) {
         String receiptId = null;
         for (String line : lines) {

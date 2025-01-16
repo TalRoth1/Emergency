@@ -7,6 +7,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class StompConnections<T> implements Connections<T> {
     private final ConcurrentHashMap<Integer, ConnectionHandler<T>> clients;
     private final ConcurrentHashMap<String, CopyOnWriteArraySet<Integer>> topicSubscribers;
+    private final ConcurrentHashMap<String, ConcurrentHashMap<String, CopyOnWriteArraySet<String>>> messages;
+
 
     public StompConnections() {
         clients = new ConcurrentHashMap<>();
@@ -56,6 +58,18 @@ public class StompConnections<T> implements Connections<T> {
             subscribers.remove(connectionId);
         }
     }
+
+    public void saveMessage(String channel, String user, String message) {
+        messages
+            .computeIfAbsent(channel, k -> new ConcurrentHashMap<>())
+            .computeIfAbsent(user, k -> new CopyOnWriteArraySet<>())
+            .add(message);
+    }
+
+    public CopyOnWriteArraySet<String> getMessages(String channel, String user) {
+        return messages.getOrDefault(channel, new ConcurrentHashMap<>()).getOrDefault(user, new CopyOnWriteArraySet<>());
+    
+    }    
     public int size() {
         return clients.size();
     }
