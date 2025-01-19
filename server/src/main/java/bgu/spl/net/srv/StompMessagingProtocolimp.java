@@ -2,6 +2,7 @@ package bgu.spl.net.srv;
 
 import bgu.spl.net.api.MessagingProtocol;
 
+import java.io.IOError;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class StompMessagingProtocolimp implements MessagingProtocol<String> {
@@ -11,14 +12,6 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
     private boolean shouldTerminate = false;
     private static ConcurrentHashMap<String, String> users = new ConcurrentHashMap<>();
 
-    public StompMessagingProtocolimp()
-    {
-    }
-    public StompMessagingProtocolimp(int connectionId, Connections<String> connections)
-    {
-        this.connectionId = connectionId;
-        this.connections = connections;
-    }
     @Override
     public void start(int connectionId, Connections<String> connections)
     {
@@ -31,7 +24,8 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
     {
         String[] lines = message.split("\n");
         String command = lines[0];
-        switch (command) {
+        switch (command) 
+        {
             case "CONNECT":
                 return handleConnect(lines);
             case "SUBSCRIBE":
@@ -55,21 +49,34 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
 
     private String handleConnect(String[] lines)
     {
-        String login = null, passcode = null;
-        for (String line : lines) {
-            if (line.startsWith("login:")) login = line.substring(6);
-            if (line.startsWith("passcode:")) passcode = line.substring(9);
+        try
+        {
+            String login = null, passcode = null, stompV = null;
+            for (String line : lines) {
+                if (line.startsWith("accept-version:")) stompV = line.substring(15);
+                if (line.startsWith("login:")) login = line.substring(6);
+                if (line.startsWith("passcode:")) passcode = line.substring(9);
+            }
+            if (login == null || passcode == null) {
+                return createErrorFrame("Missing login or passcode");
+            }
+            if (!users.containsKey(login)) {
+                users.put(login, passcode);
+                return "CONNECTED\nversion:1.2\n\n";
+            } else if (!users.get(login).equals(passcode)) {
+                return createErrorFrame("Wrong password");
+            }
+            return "CONNECTED\nversion:" + stompV + "\n\n";
         }
-        if (login == null || passcode == null) {
-            return createErrorFrame("Missing login or passcode");
+        catch(IOError e)
+        {
+            shouldTerminate = true;
+            String err = "ERROR\nreceipt-id:?\nmessage:?\n\nThe message:\n-----\n";
+            for(int i = 0; i< lines.length; i++)
+                err += lines[i];
+            err += "\n-----\n" + e.toString();
+            return err;
         }
-        if (!users.containsKey(login)) {
-            users.put(login, passcode);
-            return "CONNECTED\nversion:1.2\n\n";
-        } else if (!users.get(login).equals(passcode)) {
-            return createErrorFrame("Wrong password");
-        }
-        return "CONNECTED\nversion:1.2\n\n";
     }
 
     private String handleSubscribe(String[] lines) {
@@ -100,20 +107,27 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
         return "RECEIPT\nreceipt-id:" + id + "\n\n";
     }
 
-    private String handleSend(String[] lines) {
+    private String handleSend(String[] lines)
+    {
         String destination = null, body = null;
+        String user = null;
+    
         for (String line : lines) {
             if (line.startsWith("destination:")) destination = line.substring(12);
-            if (!line.contains(":")) body = line;
+            else if (line.startsWith("user:")) user = line.substring(5);
+            else if (!line.contains(":")) body = line;
         }
-        if (destination == null || body == null) {
-            return createErrorFrame("Missing destination or body");
+    
+        if (destination == null || body == null || user == null) {
+            return createErrorFrame("Missing destination, body, or user");
         }
         if(connections != null)
-            connections.send(destination, body);
+        {
+            connections.saveMessage(destination, user, body); 
+            connections.sendChanel(destination, body);
+        }
         return null; // No response needed
     }
-
     private String handleDisconnect(String[] lines) {
         String receiptId = null;
         for (String line : lines) {

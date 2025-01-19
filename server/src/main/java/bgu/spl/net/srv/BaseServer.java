@@ -31,23 +31,27 @@ public abstract class BaseServer<T> implements Server<T> {
 
             this.sock = serverSock; //just to be able to close
 
-            while (!Thread.currentThread().isInterrupted()) {
-
-                int connectionId = getnerateConnectionId();
+            while (!Thread.currentThread().isInterrupted()) 
+            {
                 Socket clientSock = serverSock.accept();
                 System.out.println("Client connected" + clientSock.getRemoteSocketAddress().toString());
-                BlockingConnectionHandler<T> handler = new BlockingConnectionHandler<>(clientSock, encdecFactory.get(), protocolFactory.get());
+                int connectionId = getnerateConnectionId();
+                MessagingProtocol<T> protocol = protocolFactory.get();
+                protocol.start(connectionId, connections);
+                BlockingConnectionHandler<T> handler = new BlockingConnectionHandler<>(clientSock, encdecFactory.get(), protocol);
                 connections.addClient(connectionId, handler);
                 execute(handler);
             }
-        } catch (IOException ex) {
+        } 
+        catch (IOException ex) 
+        {
         }
-
         System.out.println("server closed!!!");
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() throws IOException 
+    {
 		if (sock != null)
 			sock.close();
     }

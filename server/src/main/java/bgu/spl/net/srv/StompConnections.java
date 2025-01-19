@@ -32,7 +32,8 @@ public class StompConnections<T> implements Connections<T> {
             }
         }
     }
-
+    public void sendChanel(String destination, String body)
+    {}
     @Override
     public void disconnect(int connectionId) {
         clients.remove(connectionId);
@@ -58,5 +59,9 @@ public class StompConnections<T> implements Connections<T> {
     }
     public int size() {
         return clients.size();
+    }
+
+    public void saveMessage(String destination, String user, String body)
+    {
     }
 }
