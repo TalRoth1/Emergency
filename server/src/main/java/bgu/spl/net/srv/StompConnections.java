@@ -7,10 +7,13 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class StompConnections<T> implements Connections<T> {
     private final ConcurrentHashMap<Integer, ConnectionHandler<T>> clients;
     private final ConcurrentHashMap<String, CopyOnWriteArraySet<Integer>> topicSubscribers;
+    private final ConcurrentHashMap<Integer, ConcurrentHashMap<String, String>> subscriptions;
+
 
     public StompConnections() {
         clients = new ConcurrentHashMap<>();
         topicSubscribers = new ConcurrentHashMap<>();
+        subscriptions = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -25,38 +28,44 @@ public class StompConnections<T> implements Connections<T> {
 
     @Override
     public void send(String channel, T msg) {
-        CopyOnWriteArraySet<Integer> subscribers = topicSubscribers.get(channel);
-        if (subscribers != null) {
-            for (Integer connectionId : subscribers) {
-                send(connectionId, msg);
-            }
+        for (Integer connId : topicSubscribers.getOrDefault(channel, new CopyOnWriteArraySet<>())) {
+            send(connId, msg);
         }
     }
+    
     public void sendChanel(String destination, String body)
     {}
+    
     @Override
     public void disconnect(int connectionId) {
         clients.remove(connectionId);
-        // Remove the client from all subscribed topics
         for (CopyOnWriteArraySet<Integer> subscribers : topicSubscribers.values()) {
             subscribers.remove(connectionId);
         }
+        subscriptions.remove(connectionId);
     }
 
     public void addClient(int connectionId, ConnectionHandler<T> handler) {
         clients.put(connectionId, handler);
     }
 
-    public void subscribe(String channel, int connectionId) {
+    public void subscribe(String channel, int connectionId, String subId) {
         topicSubscribers.computeIfAbsent(channel, k -> new CopyOnWriteArraySet<>()).add(connectionId);
+        subscriptions.computeIfAbsent(connectionId, k -> new ConcurrentHashMap<>()).put(subId, channel);
     }
 
-    public void unsubscribe(String channel, int connectionId) {
-        CopyOnWriteArraySet<Integer> subscribers = topicSubscribers.get(channel);
-        if (subscribers != null) {
-            subscribers.remove(connectionId);
+    public void unsubscribe(String subId, int connectionId) {
+        String channel = subscriptions.getOrDefault(connectionId, new ConcurrentHashMap<>()).remove(subId);
+        if (channel != null) {
+            topicSubscribers.getOrDefault(channel, new CopyOnWriteArraySet<>()).remove(connectionId);
         }
     }
+    public void broadcast(String channel, T message) {
+        for (Integer connId : topicSubscribers.getOrDefault(channel, new CopyOnWriteArraySet<>())) {
+            send(connId, message);
+        }
+    }
+    
     public int size() {
         return clients.size();
     }

@@ -1,11 +1,9 @@
-#include "StompClient.h"
+#include "../include/StompClient.h"
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
 
 
-int main(int argc, char *argv[])
-{
-StompClient::StompClient(const std::string &host, int port)
+StompClient::StompClient(const std::string &host, short port)
     : socket(ioContext), running(false) {
     boost::asio::ip::tcp::resolver resolver(ioContext);
     auto endpoints = resolver.resolve(host, std::to_string(port));
@@ -65,50 +63,35 @@ void StompClient::communicationThread()
     }
 }
 
-void StompClient::keyboardInputThread()
-{
+void StompClient::keyboardInputThread() {
     while (running) {
         std::string input;
         std::getline(std::cin, input);
-
-        // Translate keyboard input to STOMP frames
-        if (boost::algorithm::starts_with(input, "login "))
-		{
-            std::string frame = "CONNECT\naccept-version:1.2\nhost:localhost\nlogin:user\npasscode:1234\n\n\0";
-            std::lock_guard<std::mutex> lock(queueMutex);
-            messageQueue.push(frame);
-            queueCond.notify_one();
-        } else if (boost::algorithm::starts_with(input, "join "))
-		{
-            std::string channel = input.substr(5);
-            std::string frame = "SUBSCRIBE\ndestination:/" + channel + "\nid:1\n\n\0";
-            std::lock_guard<std::mutex> lock(queueMutex);
-            messageQueue.push(frame);
-            queueCond.notify_one();
-        } else if (boost::algorithm::starts_with(input, "exit "))
-		{
-            std::string channel = input.substr(5);
-            std::string frame = "UNSUBSCRIBE\nid:1\n\n\0";
-            std::lock_guard<std::mutex> lock(queueMutex);
-            messageQueue.push(frame);
-            queueCond.notify_one();
-        } else if (boost::algorithm::starts_with(input, "send "))
-		{
-            std::string message = input.substr(5);
-            std::string frame = "SEND\ndestination:/topic\n\n" + message + "\0";
-            std::lock_guard<std::mutex> lock(queueMutex);
-            messageQueue.push(frame);
-            queueCond.notify_one();
-        } else if (input == "logout") {
-            std::string frame = "DISCONNECT\nreceipt:123\n\n\0";
-            std::lock_guard<std::mutex> lock(queueMutex);
-            messageQueue.push(frame);
-            queueCond.notify_one();
-            running = false; // Stop the loop
-        } else {
-            std::cerr << "Unknown command: " << input << std::endl;
-        }
+        sendCommand(input);
     }
+}
+void StompClient::sendCommand(const std::string &command) {
+    std::string frame;
+    if (boost::algorithm::starts_with(command, "login ")) {
+        frame = "CONNECT\naccept-version:1.2\nhost:localhost\nlogin:user\npasscode:1234\n\n\0";
+    } else if (boost::algorithm::starts_with(command, "join ")) {
+        std::string channel = command.substr(5);
+        frame = "SUBSCRIBE\ndestination:/" + channel + "\nid:1\n\n\0";
+    } else if (boost::algorithm::starts_with(command, "exit ")) {
+        frame = "UNSUBSCRIBE\nid:1\n\n\0";
+    } else if (boost::algorithm::starts_with(command, "send ")) {
+        std::string message = command.substr(5);
+        frame = "SEND\ndestination:/topic\n\n" + message + "\0";
+    } else if (command == "logout") {
+        frame = "DISCONNECT\nreceipt:123\n\n\0";
+        running = false;
+    } else {
+        std::cerr << "Unknown command: " << command << std::endl;
+        return;
+    }
+    std::lock_guard<std::mutex> lock(queueMutex);
+    messageQueue.push(frame);
+    queueCond.notify_one();
 }
 
 void StompClient::sendToServer(const std::string &frame)
@@ -126,6 +109,54 @@ std::string StompClient::readMessageFromServer()
     return message;
 }
 
-void StompClient::processServerMessage(const std::string &message) {
-    std::cout << "Server: " << message << std::endl;
+void StompClient::processServerMessage(const std::string &frame) {
+    std::istringstream iss(frame);
+    std::string command;
+    std::getline(iss, command);
+
+    if (command == "MESSAGE") {
+        std::string destination, user, body;
+        std::string line;
+        bool inBody = false;
+
+        while (std::getline(iss, line)) {
+            if (inBody) {
+                body += line + "\n";
+            } else if (line.empty()) {
+                inBody = true;
+            } else if (boost::starts_with(line, "destination:")) {
+                destination = line.substr(12);
+            } else if (boost::starts_with(line, "user:")) {
+                user = line.substr(5);
+            }
+        }
+        body = boost::trim_copy(body);
+        storeMessage(destination, user, body);
+    }
+}
+void StompClient::storeMessage(const std::string &channel, const std::string &user, const std::string &message) {
+    std::lock_guard<std::mutex> lock(storageMutex);
+    messages[channel][user].push_back(message);
+}
+
+void StompClient::handleSummaryCommand(const std::string &channel, const std::string &user, const std::string &filename) {
+    std::lock_guard<std::mutex> lock(storageMutex);
+
+    auto channelIt = messages.find(channel);
+    if (channelIt == messages.end()) {
+        std::cout << "No messages for channel " << channel << std::endl;
+        return;
+    }
+
+    auto userIt = channelIt->second.find(user);
+    if (userIt == channelIt->second.end()) {
+        std::cout << "No messages for user " << user << " in channel " << channel << std::endl;
+        return;
+    }
+
+    std::ofstream outFile(filename);
+    for (const auto &message : userIt->second) {
+        outFile << message << std::endl;
+    }
+    std::cout << "Summary written to " << filename << std::endl;
 }

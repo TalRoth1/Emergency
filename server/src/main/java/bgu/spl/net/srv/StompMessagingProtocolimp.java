@@ -1,16 +1,20 @@
 package bgu.spl.net.srv;
 
 import bgu.spl.net.api.MessagingProtocol;
+import bgu.spl.net.api.StompMessagingProtocol;
 
 import java.io.IOError;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class StompMessagingProtocolimp implements MessagingProtocol<String> {
+public class StompMessagingProtocolimp implements StompMessagingProtocol<String> {
 
     private int connectionId;
     private Connections<String> connections;
     private boolean shouldTerminate = false;
     private static ConcurrentHashMap<String, String> users = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<Integer, String> activeUsers = new ConcurrentHashMap<>(); // connectionId -> username
+
+
 
     @Override
     public void start(int connectionId, Connections<String> connections)
@@ -20,24 +24,28 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
     }
 
     @Override
-    public String process(String message)
+    public void process(String message)
     {
         String[] lines = message.split("\n");
         String command = lines[0];
-        switch (command) 
-        {
+        switch (command) {
             case "CONNECT":
-                return handleConnect(lines);
+                handleConnect(lines);
+                break;
             case "SUBSCRIBE":
-                return handleSubscribe(lines);
+                handleSubscribe(lines);
+                break;
             case "UNSUBSCRIBE":
-                return handleUnsubscribe(lines);
+                handleUnsubscribe(lines);
+                break;
             case "SEND":
-                return handleSend(lines);
+                handleSend(lines);
+                break;
             case "DISCONNECT":
-                return handleDisconnect(lines);
+                handleDisconnect(lines);
+                break;
             default:
-                return createErrorFrame("Unknown command");
+                connections.send(connectionId, createErrorFrame("Unknown command"));
         }
     }
 
@@ -47,99 +55,107 @@ public class StompMessagingProtocolimp implements MessagingProtocol<String> {
         return shouldTerminate;
     }
 
-    private String handleConnect(String[] lines)
+    private void handleConnect(String[] lines)
     {
         try
         {
-            String login = null, passcode = null, stompV = null;
-            for (String line : lines) {
-                if (line.startsWith("accept-version:")) stompV = line.substring(15);
-                if (line.startsWith("login:")) login = line.substring(6);
-                if (line.startsWith("passcode:")) passcode = line.substring(9);
-            }
+            String login = getHeader(lines, "login");
+            String passcode = getHeader(lines, "passcode");
             if (login == null || passcode == null) {
-                return createErrorFrame("Missing login or passcode");
+                connections.send(connectionId, createErrorFrame("Missing login or passcode"));
+                return;
             }
+    
             if (!users.containsKey(login)) {
                 users.put(login, passcode);
-                return "CONNECTED\nversion:1.2\n\n";
             } else if (!users.get(login).equals(passcode)) {
-                return createErrorFrame("Wrong password");
+                connections.send(connectionId, createErrorFrame("Wrong password"));
+                return;
             }
-            return "CONNECTED\nversion:" + stompV + "\n\n";
-        }
-        catch(IOError e)
-        {
-            shouldTerminate = true;
-            String err = "ERROR\nreceipt-id:?\nmessage:?\n\nThe message:\n-----\n";
-            for(int i = 0; i< lines.length; i++)
-                err += lines[i];
-            err += "\n-----\n" + e.toString();
-            return err;
-        }
-    }
-
-    private String handleSubscribe(String[] lines) {
-        String destination = null, id = null;
-        for (String line : lines) {
-            if (line.startsWith("destination:")) destination = line.substring(12);
-            if (line.startsWith("id:")) id = line.substring(3);
-        }
-        if (destination == null || id == null) {
-            return createErrorFrame("Missing destination or id");
-        }
-        if(connections != null)
-            connections.subscribe(destination, connectionId);
-        return "RECEIPT\nreceipt-id:" + id + "\n\n";
-    }
-
-    private String handleUnsubscribe(String[] lines)
-    {
-        String id = null;
-        for (String line : lines) {
-            if (line.startsWith("id:")) id = line.substring(3);
-        }
-        if (id == null) {
-            return createErrorFrame("Missing id");
-        }
-        if(connections != null)
-            connections.unsubscribe(id, connectionId);
-        return "RECEIPT\nreceipt-id:" + id + "\n\n";
-    }
-
-    private String handleSend(String[] lines)
-    {
-        String destination = null, body = null;
-        String user = null;
     
-        for (String line : lines) {
-            if (line.startsWith("destination:")) destination = line.substring(12);
-            else if (line.startsWith("user:")) user = line.substring(5);
-            else if (!line.contains(":")) body = line;
+            activeUsers.put(connectionId, login);
+            connections.send(connectionId, "CONNECTED\nversion:1.2\n\n\0");
         }
-    
-        if (destination == null || body == null || user == null) {
-            return createErrorFrame("Missing destination, body, or user");
-        }
-        if(connections != null)
-        {
-            connections.saveMessage(destination, user, body); 
-            connections.sendChanel(destination, body);
-        }
-        return null; // No response needed
     }
-    private String handleDisconnect(String[] lines) {
-        String receiptId = null;
-        for (String line : lines) {
-            if (line.startsWith("receipt:")) receiptId = line.substring(8);
+
+    private void handleSubscribe(String[] lines) {
+        String destination = getHeader(lines, "destination");
+        String subId = getHeader(lines, "id");
+
+        if (destination == null || subId == null) {
+            connections.send(connectionId, createErrorFrame("Missing destination or id in SUBSCRIBE"));
+            return;
         }
+
+        ((StompConnections<String>) connections).subscribe(destination, connectionId, subId);
+        connections.send(connectionId, "RECEIPT\nreceipt-id:" + subId + "\n\n\0");
+    }
+
+    private void handleUnsubscribe(String[] lines) {
+        String subId = getHeader(lines, "id");
+
+        if (subId == null) {
+            connections.send(connectionId, createErrorFrame("Missing id in UNSUBSCRIBE"));
+            return;
+        }
+
+        ((StompConnections<String>) connections).unsubscribe(subId, connectionId);
+        connections.send(connectionId, "RECEIPT\nreceipt-id:" + subId + "\n\n\0");
+    }
+
+
+    private void handleSend(String[] lines) {
+        String destination = getHeader(lines, "destination");
+        String body = extractBody(lines);
+
+        if (destination == null || body.isEmpty()) {
+            connections.send(connectionId, createErrorFrame("Missing destination or body in SEND"));
+            return;
+        }
+
+        // Broadcast to all subscribers of the channel
+        ((StompConnections<String>) connections).broadcast(destination, body);
+
+        // If the frame includes a receipt header
+        String receipt = getHeader(lines, "receipt");
+        if (receipt != null) {
+            connections.send(connectionId, "RECEIPT\nreceipt-id:" + receipt + "\n\n\0");
+        }
+    }
+    private void handleDisconnect(String[] lines) {
+        String receipt = getHeader(lines, "receipt");
         shouldTerminate = true;
-        if(connections != null)
-            connections.disconnect(connectionId);
-        return "RECEIPT\nreceipt-id:" + receiptId + "\n\n";
+
+        activeUsers.remove(connectionId);
+        connections.disconnect(connectionId);
+
+        if (receipt != null) {
+            connections.send(connectionId, "RECEIPT\nreceipt-id:" + receipt + "\n\n\0");
+        }
+    }
+    private String getHeader(String[] lines, String header) {
+        for (String line : lines) {
+            if (line.startsWith(header + ":")) {
+                return line.substring((header + ":").length()).trim();
+            }
+        }
+        return null;
+    }
+
+    private String extractBody(String[] lines) {
+        boolean inBody = false;
+        StringBuilder body = new StringBuilder();
+        for (String line : lines) {
+            if (inBody) {
+                body.append(line).append("\n");
+            } else if (line.isEmpty()) {
+                inBody = true;
+            }
+        }
+        return body.toString().trim();
     }
 
     private String createErrorFrame(String message) {
-        return "ERROR\nmessage:" + message + "\n\n";
+        return "ERROR\nmessage:" + message + "\n\n\0";
     }
 }
