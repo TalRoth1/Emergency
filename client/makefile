@@ -1,27 +1,32 @@
-CFLAGS:=-c -Wall -Weffc++ -g -std=c++11 -Iinclude
-LDFLAGS:=-lboost_system -lpthread
-# TODO change the makefile for StompEMIlient
-all: EchoClient
+# Compiler and Flags
+CXX := g++
+CFLAGS := -c -Wall -Weffc++ -g -std=c++11 -Iinclude
+LDFLAGS := -lboost_system -lpthread
 
-EchoClient: bin/ConnectionHandler.o bin/echoClient.o
-	g++ -o bin/EchoClient bin/ConnectionHandler.o bin/echoClient.o $(LDFLAGS)
+# Directories
+SRCDIR := src
+BINDIR := bin
+INCLUDEDIR := include
 
-StompWCIClient: bin/ConnectionHandler.o bin/StompClient.obin/event.o
-	g++ -o bin/StompWCIClient bin/ConnectionHandler.o bin/StompClient.o $(LDFLAGS)
+# Target Executable
+TARGET := bin/StompWCIClient
 
-bin/ConnectionHandler.o: src/ConnectionHandler.cpp
-	g++ $(CFLAGS) -o bin/ConnectionHandler.o src/ConnectionHandler.cpp
+# Source and Object Files
+SOURCES := $(wildcard $(SRCDIR)/*.cpp)
+OBJECTS := $(patsubst $(SRCDIR)/%.cpp,$(BINDIR)/%.o,$(SOURCES))
 
-bin/echoClient.o: src/echoClient.cpp
-	g++ $(CFLAGS) -o bin/echoClient.o src/echoClient.cpp
+# Default Target
+all: $(TARGET)
 
-bin/event.o: src/event.cpp
-	g++ $(CFLAGS) -o bin/event.o src/event.cpp
+# Build Target Executable
+$(TARGET): $(OBJECTS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
-bin/StompClient.o: src/StompClient.cpp
-	g++ $(CFLAGS) -o bin/StompClient.o src/StompClient.cpp
+# Build Object Files
+$(BINDIR)/%.o: $(SRCDIR)/%.cpp $(INCLUDEDIR)/%.h
+	$(CXX) $(CFLAGS) -o $@ $<
 
+# Clean Build Files
 .PHONY: clean
 clean:
-	rm -f bin/*
-	
+	rm -f $(BINDIR)/*
