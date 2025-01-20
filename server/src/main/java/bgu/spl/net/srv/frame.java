@@ -1,7 +1,8 @@
 package bgu.spl.net.srv;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+
 
 public class frame {
 
@@ -10,7 +11,7 @@ public class frame {
     private String body;                   // The text body of the frame (may be empty)
 
     public frame() {
-        this.headers = new HashMap<>();
+        this.headers = new LinkedHashMap<>();
         this.body = "";
     }
 
@@ -69,7 +70,37 @@ public class frame {
             sb.append(entry.getKey()).append(":").append(entry.getValue()).append("\n");
         }
         sb.append("\n");            // Blank line separating headers and body
-        sb.append(body).append("\0"); // Null terminator at the end
+        sb.append(body);
         return sb.toString();
+    }
+
+    public static frame fromString(String frameString) {
+        // Split the first line for the command
+        String[] parts = frameString.split("\n", 2);
+        if (parts.length == 0) {
+            // Malformed or empty
+            return null;
+        }
+        String command = parts[0].trim();
+
+        String headersAndMaybeBody = (parts.length > 1) ? parts[1] : "";
+        // Split headers vs. body by "\n\n"
+        String[] headerBodySplit = headersAndMaybeBody.split("\n\n", 2);
+        String headerPart = headerBodySplit[0];
+        String bodyPart = (headerBodySplit.length > 1) ? headerBodySplit[1] : "";
+
+        Map<String, String> headers = new LinkedHashMap<>();
+        if (!headerPart.isEmpty()) {
+            // Each header is "key:value"
+            for (String line : headerPart.split("\n")) {
+                int idx = line.indexOf(':');
+                if (idx > 0 && idx < line.length() - 1) {
+                    String key = line.substring(0, idx).trim();
+                    String val = line.substring(idx + 1).trim();
+                    headers.put(key, val);
+                }
+            }
+        }
+        return new frame(command, headers, bodyPart);
     }
 }

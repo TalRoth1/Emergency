@@ -5,9 +5,14 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 
 public class StompConnections<T> implements Connections<T> {
-    private final ConcurrentHashMap<Integer, ConnectionHandler<T>> clients;
-    private final ConcurrentHashMap<String, CopyOnWriteArraySet<Integer>> topicSubscribers;
-    private final ConcurrentHashMap<Integer, ConcurrentHashMap<String, String>> subscriptions;
+   // connectionId -> ConnectionHandler<T>
+   private final ConcurrentHashMap<Integer, ConnectionHandler<T>> clients;
+   
+   // channel -> set of connectionIds
+   private final ConcurrentHashMap<String, CopyOnWriteArraySet<Integer>> topicSubscribers;
+   
+   // connectionId -> (subscriptionId -> channel)
+   private final ConcurrentHashMap<Integer, ConcurrentHashMap<String, String>> subscriptions;
 
 
     public StompConnections() {
@@ -32,15 +37,11 @@ public class StompConnections<T> implements Connections<T> {
             send(connId, msg);
         }
     }
-    
-    public void sendChanel(String destination, String body)
-    {}
-    
     @Override
     public void disconnect(int connectionId) {
         clients.remove(connectionId);
-        for (CopyOnWriteArraySet<Integer> subscribers : topicSubscribers.values()) {
-            subscribers.remove(connectionId);
+        for (CopyOnWriteArraySet<Integer> subs : topicSubscribers.values()) {
+            subs.remove(connectionId);
         }
         subscriptions.remove(connectionId);
     }
@@ -55,8 +56,10 @@ public class StompConnections<T> implements Connections<T> {
     }
 
     public void unsubscribe(String subId, int connectionId) {
-        String channel = subscriptions.getOrDefault(connectionId, new ConcurrentHashMap<>()).remove(subId);
-        if (channel != null) {
+        ConcurrentHashMap<String, String> subMap =subscriptions.getOrDefault(connectionId, new ConcurrentHashMap<>());
+        String channel = subMap.remove(subId);
+        if (channel != null) 
+        {
             topicSubscribers.getOrDefault(channel, new CopyOnWriteArraySet<>()).remove(connectionId);
         }
     }

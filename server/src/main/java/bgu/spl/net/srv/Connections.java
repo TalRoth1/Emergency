@@ -6,7 +6,6 @@ public interface Connections<T> {
 
     void send(String channel, T msg);
 
-    void sendChanel(String destination, String body); // Added
 
     void disconnect(int connectionId);
 
