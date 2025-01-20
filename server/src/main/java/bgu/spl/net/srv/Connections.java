@@ -6,9 +6,12 @@ public interface Connections<T> {
 
     void send(String channel, T msg);
 
+
     void disconnect(int connectionId);
 
-    void subscribe(String dest, int connectionId); // Added
+    void subscribe(String dest, int connectionId, String subId); // Added
 
     void unsubscribe(String dest, int connectionId); // Added
+
+    void saveMessage(String destination, String user, String body); // Added
 }

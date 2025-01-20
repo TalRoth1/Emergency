@@ -46,7 +46,7 @@ public class Reactor<T> implements Server<T> {
             serverSock.bind(new InetSocketAddress(port));
             serverSock.configureBlocking(false);
             serverSock.register(selector, SelectionKey.OP_ACCEPT);
-			System.out.println("Server started");
+			System.out.println("Reactor server started on port " + port);
 
             while (!Thread.currentThread().isInterrupted()) {
 
@@ -82,10 +82,14 @@ public class Reactor<T> implements Server<T> {
     /*package*/ void updateInterestedOps(SocketChannel chan, int ops) {
         final SelectionKey key = chan.keyFor(selector);
         if (Thread.currentThread() == selectorThread) {
-            key.interestOps(ops);
+            if (key != null && key.isValid()) {
+                key.interestOps(ops);
+            }
         } else {
             selectorTasks.add(() -> {
-                key.interestOps(ops);
+                if (key != null && key.isValid()) {
+                    key.interestOps(ops);
+                }
             });
             selector.wakeup();
         }

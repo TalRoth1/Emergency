@@ -6,62 +6,76 @@
 #include <map>
 #include <vector>
 #include <sstream>
+<<<<<<< HEAD
 #include <cstring>/                                 
 #include "../include/keyboardInput.h"
+=======
+#include <cstring>
+
+// Function to split a string by a delimiter
+void split_str(const std::string &s, char delimiter, std::vector<std::string> &tokens) {
+    std::string token;
+    std::istringstream tokenStream(s);
+    while (std::getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+}
+
+>>>>>>> Frame
 
 using namespace std;
 using json = nlohmann::json;
 
-Event::Event(std::string channel_name, std::string city, std::string name, int date_time,
+event::event(std::string channel_name, std::string city, std::string name, int date_time,
              std::string description, std::map<std::string, std::string> general_information)
     : channel_name(channel_name), city(city), name(name),
       date_time(date_time), description(description), general_information(general_information), eventOwnerUser("")
 {
 }
 
-Event::~Event()
+event::~event()
 {
 }
 
-void Event::setEventOwnerUser(std::string setEventOwnerUser) {
+void event::setEventOwnerUser(std::string setEventOwnerUser) {
     eventOwnerUser = setEventOwnerUser;
 }
 
-const std::string &Event::getEventOwnerUser() const {
+const std::string &event::getEventOwnerUser() const {
     return eventOwnerUser;
 }
 
-const std::string &Event::get_channel_name() const
+const std::string &event::get_channel_name() const
 {
     return this->channel_name;
 }
 
-const std::string &Event::get_city() const
+const std::string &event::get_city() const
 {
     return this->city;
 }
 
-const std::string &Event::get_name() const
+const std::string &event::get_name() const
 {
     return this->name;
 }
 
-int Event::get_date_time() const
+int event::get_date_time() const
 {
     return this->date_time;
 }
 
-const std::map<std::string, std::string> &Event::get_general_information() const
+const std::map<std::string, std::string> &event::get_general_information() const
 {
     return this->general_information;
 }
 
-const std::string &Event::get_description() const
+const std::string &event::get_description() const
 {
     return this->description;
 }
 
-Event::Event(const std::string &frame_body): channel_name(""), city(""), 
+event::event(const std::string &frame_body): channel_name(""), city(""), 
                                              name(""), date_time(0), description(""), general_information(),
                                              eventOwnerUser("")
 {
@@ -121,7 +135,7 @@ names_and_events parseEventsFile(std::string json_path)
     std::string channel_name = data["channel_name"];
 
     // run over all the events and convert them to Event objects
-    std::vector<Event> events;
+    std::vector<event> events;
     for (auto &event : data["events"])
     {
         std::string name = event["event_name"];
@@ -137,7 +151,7 @@ names_and_events parseEventsFile(std::string json_path)
                 general_information[update.key()] = update.value().dump();
         }
 
-        events.push_back(Event(channel_name, city, name, date_time, description, general_information));
+        events.push_back(event(channel_name, city, name, date_time, description, general_information));
     }
     names_and_events events_and_names{channel_name, events};
 
