@@ -25,6 +25,7 @@ public class StompConnections<T> implements Connections<T> {
     public boolean send(int connectionId, T msg) {
         ConnectionHandler<T> handler = clients.get(connectionId);
         if (handler != null) {
+            System.out.println("Sending message: " + msg);
             handler.send(msg);
             return true;
         }

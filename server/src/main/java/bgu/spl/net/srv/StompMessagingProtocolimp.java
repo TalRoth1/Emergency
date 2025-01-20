@@ -97,7 +97,8 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         }
 
         // Record subscription
-        ((StompConnections<frame>) connections).subscribe(destination, connectionId, subId);
+        System.out.println("Subscribing to " + destination + " with ID " + subId);
+        connections.subscribe(destination, connectionId, subId);
 
         // Return a RECEIPT frame
         frame receipt = new frame();
@@ -174,6 +175,7 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
             frame receiptFrame = new frame();
             receiptFrame.setCommand("RECEIPT");
             receiptFrame.addHeader("receipt-id", receipt);
+            System.out.println("Disconnecting with receipt " + receipt);
             connections.send(connectionId, receiptFrame);
         }
     }
