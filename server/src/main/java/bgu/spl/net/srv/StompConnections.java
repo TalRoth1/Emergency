@@ -32,13 +32,16 @@ public class StompConnections<T> implements Connections<T> {
     }
 
     @Override
-    public void send(String channel, T msg) {
-        for (Integer connId : topicSubscribers.getOrDefault(channel, new CopyOnWriteArraySet<>())) {
+    public void send(String channel, T msg)
+    {
+        for (Integer connId : topicSubscribers.getOrDefault(channel, new CopyOnWriteArraySet<>()))
+        {
             send(connId, msg);
         }
     }
     @Override
-    public void disconnect(int connectionId) {
+    public void disconnect(int connectionId)
+    {
         clients.remove(connectionId);
         for (CopyOnWriteArraySet<Integer> subs : topicSubscribers.values()) {
             subs.remove(connectionId);
@@ -46,34 +49,36 @@ public class StompConnections<T> implements Connections<T> {
         subscriptions.remove(connectionId);
     }
 
-    public void addClient(int connectionId, ConnectionHandler<T> handler) {
+    public void addClient(int connectionId, ConnectionHandler<T> handler)
+    {
         clients.put(connectionId, handler);
     }
 
-    public void subscribe(String channel, int connectionId, String subId) {
+    public void subscribe(String channel, int connectionId, String subId)
+    {
         topicSubscribers.computeIfAbsent(channel, k -> new CopyOnWriteArraySet<>()).add(connectionId);
         subscriptions.computeIfAbsent(connectionId, k -> new ConcurrentHashMap<>()).put(subId, channel);
     }
 
-    public void unsubscribe(String subId, int connectionId) {
-        ConcurrentHashMap<String, String> subMap =subscriptions.getOrDefault(connectionId, new ConcurrentHashMap<>());
+    public void unsubscribe(String subId, int connectionId)
+    {
+        ConcurrentHashMap<String, String> subMap = subscriptions.getOrDefault(connectionId, new ConcurrentHashMap<>());
         String channel = subMap.remove(subId);
         if (channel != null) 
         {
             topicSubscribers.getOrDefault(channel, new CopyOnWriteArraySet<>()).remove(connectionId);
         }
     }
-    public void broadcast(String channel, T message) {
-        for (Integer connId : topicSubscribers.getOrDefault(channel, new CopyOnWriteArraySet<>())) {
+    public void broadcast(String channel, T message)
+    {
+        for (Integer connId : topicSubscribers.getOrDefault(channel, new CopyOnWriteArraySet<>()))
+        {
             send(connId, message);
         }
     }
     
-    public int size() {
-        return clients.size();
-    }
-
-    public void saveMessage(String destination, String user, String body)
+    public int size() 
     {
+        return clients.size();
     }
 }

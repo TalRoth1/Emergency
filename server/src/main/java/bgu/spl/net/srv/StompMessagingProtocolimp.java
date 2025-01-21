@@ -1,6 +1,8 @@
 package bgu.spl.net.srv;
 
 import bgu.spl.net.api.StompMessagingProtocol;
+import bgu.spl.net.api.frame;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> {
@@ -65,13 +67,16 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
             connections.send(connectionId, createErrorFrame("Missing login or passcode"));
             return;
         }
-
         // If new user, add to map
-        if (!users.containsKey(login)) {
+        if(activeUsers.contains(login))
+            connections.send(connectionId, createErrorFrame("User already logged in"));
+        else if (!users.containsKey(login))
             users.put(login, passcode);
-        } else {
+        else
+        {
             // existing user, check password
-            if (!users.get(login).equals(passcode)) {
+            if (!users.get(login).equals(passcode))
+            {
                 connections.send(connectionId, createErrorFrame("Wrong password"));
                 return;
             }
@@ -97,24 +102,25 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         }
 
         // Record subscription
-        ((StompConnections<frame>) connections).subscribe(destination, connectionId, subId);
+        connections.subscribe(destination, connectionId, subId);
 
         // Return a RECEIPT frame
         frame receipt = new frame();
         receipt.setCommand("RECEIPT");
-        receipt.addHeader("receipt-id", subId);
+        receipt.addHeader("receipt-id", subId); // is the receipt-id the sub id? no right?
         receipt.setBody("");
         connections.send(connectionId, receipt);
     }
 
     private void handleUnsubscribe(frame msg) {
         String subId = msg.getHeader("id");
-        if (subId == null) {
+        if (subId == null) 
+        {
             connections.send(connectionId, createErrorFrame("Missing 'id' in UNSUBSCRIBE"));
             return;
         }
 
-        ((StompConnections<frame>) connections).unsubscribe(subId, connectionId);
+        connections.unsubscribe(subId, connectionId);
 
         // Return a RECEIPT frame
         frame receipt = new frame();
@@ -126,7 +132,8 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
 
     private void handleSend(frame msg) {
         String destination = msg.getHeader("destination");
-        if (destination == null) {
+        if (destination == null) 
+        {
             connections.send(connectionId, createErrorFrame("Missing 'destination' in SEND"));
             return;
         }
@@ -140,11 +147,9 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         frame messageToBroadcast = new frame();
         messageToBroadcast.setCommand("MESSAGE");
         messageToBroadcast.addHeader("destination", destination);
-        // Optionally add a 'user' field if you want
         String user = activeUsers.get(connectionId);
-        if (user != null) {
+        if (user != null)
             messageToBroadcast.addHeader("user", user);
-        }
         // Set body from the original frame
         messageToBroadcast.setBody(msg.getBody());
 

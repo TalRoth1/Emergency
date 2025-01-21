@@ -12,6 +12,4 @@ public interface Connections<T> {
     void subscribe(String dest, int connectionId, String subId); // Added
 
     void unsubscribe(String dest, int connectionId); // Added
-
-    void saveMessage(String destination, String user, String body); // Added
 }

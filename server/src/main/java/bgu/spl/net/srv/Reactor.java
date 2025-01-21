@@ -12,8 +12,8 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 
-public class Reactor<T> implements Server<T> {
-
+public class Reactor<T> implements Server<T>
+{
     private final int port;
     private final Supplier<MessagingProtocol<T>> protocolFactory;
     private final Supplier<MessageEncoderDecoder<T>> readerFactory;
@@ -23,12 +23,8 @@ public class Reactor<T> implements Server<T> {
     private Thread selectorThread;
     private final ConcurrentLinkedQueue<Runnable> selectorTasks = new ConcurrentLinkedQueue<>();
 
-    public Reactor(
-            int numThreads,
-            int port,
-            Supplier<MessagingProtocol<T>> protocolFactory,
-            Supplier<MessageEncoderDecoder<T>> readerFactory) {
-
+    public Reactor(int numThreads, int port, Supplier<MessagingProtocol<T>> protocolFactory, Supplier<MessageEncoderDecoder<T>> readerFactory)
+    {
         this.pool = new ActorThreadPool(numThreads);
         this.port = port;
         this.protocolFactory = protocolFactory;
@@ -39,7 +35,8 @@ public class Reactor<T> implements Server<T> {
     public void serve() {
 	selectorThread = Thread.currentThread();
         try (Selector selector = Selector.open();
-            ServerSocketChannel serverSock = ServerSocketChannel.open()) {
+            ServerSocketChannel serverSock = ServerSocketChannel.open()) 
+        {
 
             this.selector = selector; //just to be able to close
 
@@ -96,14 +93,12 @@ public class Reactor<T> implements Server<T> {
     }
 
 
-    private void handleAccept(ServerSocketChannel serverChan, Selector selector) throws IOException {
+    private void handleAccept(ServerSocketChannel serverChan, Selector selector) throws IOException 
+    {
         SocketChannel clientChan = serverChan.accept();
         clientChan.configureBlocking(false);
-        final NonBlockingConnectionHandler<T> handler = new NonBlockingConnectionHandler<>(
-                readerFactory.get(),
-                protocolFactory.get(),
-                clientChan,
-                this);
+        MessagingProtocol<T> protocol = protocolFactory.get();
+        final NonBlockingConnectionHandler<T> handler = new NonBlockingConnectionHandler<>(readerFactory.get(), protocol, clientChan, this);
         clientChan.register(selector, SelectionKey.OP_READ, handler);
     }
 
