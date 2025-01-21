@@ -90,13 +90,16 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         connected.setCommand("CONNECTED");
         connected.addHeader("version", "1.2");
         connected.setBody(""); // no body
-        connections.send(connectionId, connected);
+        if(connections!= null)
+            connections.send(connectionId, connected);
     }
 
-    private void handleSubscribe(frame msg) {
+    private void handleSubscribe(frame msg) 
+    {
         String destination = msg.getHeader("destination");
         String subId = msg.getHeader("id");
-        if (destination == null || subId == null) {
+        if (destination == null || subId == null)
+        {
             connections.send(connectionId, createErrorFrame("Missing 'destination' or 'id' in SUBSCRIBE"));
             return;
         }

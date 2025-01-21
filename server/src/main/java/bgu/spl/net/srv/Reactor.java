@@ -15,9 +15,11 @@ import java.util.function.Supplier;
 public class Reactor<T> implements Server<T>
 {
     private final int port;
+    private int connectionId = 0;
     private final Supplier<MessagingProtocol<T>> protocolFactory;
     private final Supplier<MessageEncoderDecoder<T>> readerFactory;
     private final ActorThreadPool pool;
+    private final Connections<T> connections = new StompConnections<>();
     private Selector selector;
 
     private Thread selectorThread;
@@ -52,6 +54,7 @@ public class Reactor<T> implements Server<T>
 
                 for (SelectionKey key : selector.selectedKeys()) {
 
+                    System.out.println("handling key: " + key.readyOps());
                     if (!key.isValid()) {
                         continue;
                     } else if (key.isAcceptable()) {
@@ -98,6 +101,7 @@ public class Reactor<T> implements Server<T>
         SocketChannel clientChan = serverChan.accept();
         clientChan.configureBlocking(false);
         MessagingProtocol<T> protocol = protocolFactory.get();
+        protocol.start(getnerateConnectionId(), connections);
         final NonBlockingConnectionHandler<T> handler = new NonBlockingConnectionHandler<>(readerFactory.get(), protocol, clientChan, this);
         clientChan.register(selector, SelectionKey.OP_READ, handler);
     }
@@ -128,5 +132,8 @@ public class Reactor<T> implements Server<T>
     public void close() throws IOException {
         selector.close();
     }
-
+    public int getnerateConnectionId()
+    {
+        return this.connectionId++;
+    }
 }
