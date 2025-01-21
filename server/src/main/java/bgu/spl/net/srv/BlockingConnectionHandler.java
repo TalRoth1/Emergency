@@ -35,7 +35,7 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
                 if (nextMessage != null) {
                     System.out.println(nextMessage);
                     protocol.process(nextMessage);
-                }
+                }//closing socket- when it changed to should terminate. 
             }
         } 
         catch (IOException ex)

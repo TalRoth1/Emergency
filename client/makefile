@@ -1,32 +1,32 @@
-# Compiler and Flags
-CXX := g++
 CFLAGS := -c -Wall -Weffc++ -g -std=c++11 -Iinclude
 LDFLAGS := -lboost_system -lpthread
 
-# Directories
-SRCDIR := src
-BINDIR := bin
-INCLUDEDIR := include
+all: StompEMIClient
 
-# Target Executable
-TARGET := bin/StompWCIClient
+StompEMIClient: bin bin/ConnectionHandler.o bin/StompClient.o bin/event.o bin/keyboardInput.o bin/StompProtocol.o 
+	g++ -o bin/StompEMIClient bin/ConnectionHandler.o bin/StompClient.o bin/event.o bin/keyboardInput.o bin/StompProtocol.o $(LDFLAGS)
 
-# Source and Object Files
-SOURCES := $(wildcard $(SRCDIR)/*.cpp)
-OBJECTS := $(patsubst $(SRCDIR)/%.cpp,$(BINDIR)/%.o,$(SOURCES))
+bin:
+	mkdir bin
 
-# Default Target
-all: $(TARGET)
+bin/ConnectionHandler.o: src/ConnectionHandler.cpp
+	g++ $(CFLAGS) -o bin/ConnectionHandler.o src/ConnectionHandler.cpp
 
-# Build Target Executable
-$(TARGET): $(OBJECTS)
-	$(CXX) -o $@ $^ $(LDFLAGS)
+bin/event.o: src/event.cpp
+	g++ $(CFLAGS) -o bin/event.o src/event.cpp
 
-# Build Object Files
-$(BINDIR)/%.o: $(SRCDIR)/%.cpp $(INCLUDEDIR)/%.h
-	$(CXX) $(CFLAGS) -o $@ $<
+bin/StompClient.o: src/StompClient.cpp
+	g++ $(CFLAGS) -o bin/StompClient.o src/StompClient.cpp
 
-# Clean Build Files
-.PHONY: clean
+bin/StompProtocol.o: src/StompProtocol.cpp
+	g++ $(CFLAGS) -o bin/StompProtocol.o src/StompProtocol.cpp
+
+bin/Parser.o: src/keyboardInput.cpp
+	g++ $(CFLAGS) -o bin/keyboardInput.o src/keyboardInput.cpp
+
+.PHONY: clean run
 clean:
-	rm -f $(BINDIR)/*
+	rm -f bin/*
+
+run:
+	./bin/main
