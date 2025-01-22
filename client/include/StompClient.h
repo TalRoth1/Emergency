@@ -1,21 +1,3 @@
-<<<<<<< HEAD
-#pragma once
-#include "ConnectionHandler.h"
-#include "StompProtocol.h"
-
-class StompClient {
-private:
-    ConnectionHandler connectionHandler;
-    StompProtocol stompProtocol;
-    std::atomic<bool> running;
-
-public:
-    StompClient(const std::string &host, short port);
-    void start();
-    void stop();
-    void sendCommand(const std::string &command);
-};
-=======
 #ifndef STOMPCLIENT_H
 #define STOMPCLIENT_H
 
@@ -40,6 +22,8 @@ public:
     void stop();               // Stop communication
     void sendCommand(const std::string &command); // Send STOMP command
     void handleSummaryCommand(const std::string &channel, const std::string &user, const std::string &filename);
+
+bool isRunning() const;
 
 private:
     void communicationThread();         // Handle communication with server
@@ -66,4 +50,3 @@ private:
 };
 
 #endif
->>>>>>> Frame

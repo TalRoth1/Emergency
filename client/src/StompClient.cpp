@@ -92,7 +92,7 @@ void StompClient::sendCommand(const std::string &command) {
     std::lock_guard<std::mutex> lock(queueMutex);
     messageQueue.push(frame);
     queueCond.notify_one();
-}
+	}
 
 void StompClient::sendToServer(const std::string &frame)
 {
@@ -159,4 +159,8 @@ void StompClient::handleSummaryCommand(const std::string &channel, const std::st
         outFile << message << std::endl;
     }
     std::cout << "Summary written to " << filename << std::endl;
+}
+bool StompClient::isRunning() const
+{
+	return running;
 }

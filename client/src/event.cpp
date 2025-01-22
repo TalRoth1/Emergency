@@ -6,10 +6,6 @@
 #include <map>
 #include <vector>
 #include <sstream>
-<<<<<<< HEAD
-#include <cstring>/                                 
-#include "../include/keyboardInput.h"
-=======
 #include <cstring>
 
 // Function to split a string by a delimiter
@@ -21,7 +17,6 @@ void split_str(const std::string &s, char delimiter, std::vector<std::string> &t
     }
 }
 
->>>>>>> Frame
 
 using namespace std;
 using json = nlohmann::json;
@@ -151,7 +146,7 @@ names_and_events parseEventsFile(std::string json_path)
                 general_information[update.key()] = update.value().dump();
         }
 
-        events.push_back(event(channel_name, city, name, date_time, description, general_information));
+        events.emplace_back(channel_name, city, name, date_time, description, general_information);
     }
     names_and_events events_and_names{channel_name, events};
 
