@@ -101,8 +101,10 @@ public class Reactor<T> implements Server<T>
         SocketChannel clientChan = serverChan.accept();
         clientChan.configureBlocking(false);
         MessagingProtocol<T> protocol = protocolFactory.get();
-        protocol.start(getnerateConnectionId(), connections);
+        this.connectionId = getnerateConnectionId();
+        protocol.start(connectionId, connections);
         final NonBlockingConnectionHandler<T> handler = new NonBlockingConnectionHandler<>(readerFactory.get(), protocol, clientChan, this);
+        ((StompConnections<T>)connections).addClient(connectionId, handler);
         clientChan.register(selector, SelectionKey.OP_READ, handler);
     }
 

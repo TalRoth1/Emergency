@@ -108,11 +108,15 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         connections.subscribe(destination, connectionId, subId);
 
         // Return a RECEIPT frame
-        frame receipt = new frame();
-        receipt.setCommand("RECEIPT");
-        receipt.addHeader("receipt-id", subId); // is the receipt-id the sub id? no right?
-        receipt.setBody("");
-        connections.send(connectionId, receipt);
+        String receiptId = msg.getHeader("receipt");
+        if (receiptId != null)
+        {
+            frame receipt = new frame();
+            receipt.setCommand("RECEIPT");
+            receipt.addHeader("receipt-id", receiptId);
+            receipt.setBody("");
+            connections.send(connectionId, receipt);
+        }
     }
 
     private void handleUnsubscribe(frame msg) {
@@ -125,12 +129,16 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
 
         connections.unsubscribe(subId, connectionId);
 
-        // Return a RECEIPT frame
-        frame receipt = new frame();
-        receipt.setCommand("RECEIPT");
-        receipt.addHeader("receipt-id", subId);
-        receipt.setBody("");
-        connections.send(connectionId, receipt);
+        String receiptId = msg.getHeader("receipt");
+        if(receiptId != null)
+        {
+            // Return a RECEIPT frame
+            frame receipt = new frame();
+            receipt.setCommand("RECEIPT");
+            receipt.addHeader("receipt-id", subId);
+            receipt.setBody("");
+            connections.send(connectionId, receipt);
+        }
     }
 
     private void handleSend(frame msg) {
