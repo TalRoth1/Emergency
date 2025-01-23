@@ -1,6 +1,5 @@
 #ifndef STOMPCLIENT_H
 #define STOMPCLIENT_H
-
 #include <string>
 #include <thread>
 #include <mutex>
@@ -34,50 +33,67 @@ public:
     // Check if client is still running
     bool isRunning() const;
 
-    // Command handling
-    void sendCommand(const std::string &command);
-
-    // Summaries, etc.
-    void handleSummaryCommand(const std::string &channel, const std::string &user, const std::string &filename);
-
 private:
     void communicationThread();
     void keyboardInputThread();
 
-    // Helper to process server frames
-    void processServerMessage(const std::string &frame);
-
-    // Storing messages
-    void storeMessage(const std::string &channel, const std::string &user, const std::string &message);
-
-    // Low-level read/write
     void sendToServer(const std::string &frame);
+
+    // Read a raw STOMP frame from server (blocking)
     std::string readMessageFromServer();
 
-    // Boost ASIO
+    // Process the user commands from keyboard
+    void sendCommand(const std::string &command);
+
+    // Process frames from the server
+    void processServerMessage(const std::string &frame);
+
+    // Store a MESSAGE frame’s content for later summary
+    void storeMessage(const std::string &channel,
+                      const std::string &user,
+                      const std::string &message);
+
+    // For the “summary” command (local operation)
+    void handleSummaryCommand(const std::string &channel,
+                              const std::string &user,
+                              const std::string &filename);
+
+    // For the “report <file>” command
+    void handleReportCommand(const std::string &file);
+
+    // =========== Members =========== //
+
+    // The IO Context and Socket
     boost::asio::io_context ioContext;
     boost::asio::ip::tcp::socket socket;
 
-    // Threads
+    // Thread-safety / concurrency
+    std::mutex queueMutex;              // Protects messageQueue
+    std::condition_variable queueCond;  // Notify communicationThread
+    std::queue<std::string> messageQueue;
+
+    std::mutex storageMutex; // Protects messages
+    // messages[channel][user] => vector of strings
+    std::map<std::string, std::map<std::string, std::vector<std::string>>> messages;
+
     std::thread commThread;
     std::thread inputThread;
 
-    // Thread-safe queue for sending frames to the server
-    std::queue<std::string> messageQueue;
-    std::mutex queueMutex;
-    std::condition_variable queueCond;
-
-    // Storage for messages
-    std::map<std::string, std::map<std::string, std::vector<std::string>>> messages;
-    std::mutex storageMutex;
-
-    // Flag to indicate running
     std::atomic<bool> running;
 
-    // ** Store the host, username, password if you want **
-    std::string connectedHost;
-    std::string username_;
-    std::string password_;
+    // Keep track of the “current” username for forming events, etc.
+    std::string currentUser;
+
+    // Subscription IDs & receipt IDs
+    int subIdCounter = 0;
+    int receiptCounter = 0;
+
+    // For each channel, which sub ID we used
+    std::map<std::string, int> channelToSubId;
+
+    // Stomp protocol says each SUBSCRIBE can have a unique sub ID
+    // We also want unique receipts for certain frames.
+
 };
 
-#endif
+#endif // STOMPCLIENT_H
