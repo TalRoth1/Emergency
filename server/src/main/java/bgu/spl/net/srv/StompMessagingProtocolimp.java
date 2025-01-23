@@ -124,31 +124,6 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         connections.send(connectionId, receipt);
     }
 
-<<<<<<< HEAD
-    private String handleSend(String[] lines) {
-        String destination = null, body = null;
-        String user = null;
-    
-        for (String line : lines) {
-            if (line.startsWith("destination:")) destination = line.substring(12);
-            else if (line.startsWith("user:")) user = line.substring(5);
-            else if (!line.contains(":")) body = line;
-        }
-    
-        if (destination == null || body == null || user == null) {
-            return createErrorFrame("Missing destination, body, or user");
-        }
-    
-        connections.send(destination, body);
-        connections.saveMessage(destination, user, body);
-        return null; // No response needed
-    }
-    private String handleDisconnect(String[] lines) {
-        String receiptId = null;
-        for (String line : lines) {
-            if (line.startsWith("receipt:")) receiptId = line.substring(8);
-        }
-=======
     private void handleSend(frame msg) {
         String destination = msg.getHeader("destination");
         if (destination == null) {
@@ -188,7 +163,6 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
 
     private void handleDisconnect(frame msg) {
         String receipt = msg.getHeader("receipt");
->>>>>>> Frame
         shouldTerminate = true;
 
         // remove from active

@@ -1,12 +1,18 @@
 #pragma once
 
 #include "../include/ConnectionHandler.h"
+#include "../include/Frame.h"
 
 // TODO: implement the STOMP protocol
 class StompProtocol
 {
 private:
+    bool isLogin;
+    ConnectionHandler *connectionHandler;
+    
 public:
-    std::string encodeFrame(const std::string &command, const std::string &body);
-    std::string decodeFrame(const std::string &frame);
+    StompProtocol();
+    ~StompProtocol();
+
+    void process(Frame &input);
 };

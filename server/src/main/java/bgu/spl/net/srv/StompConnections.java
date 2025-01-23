@@ -5,11 +5,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 
 public class StompConnections<T> implements Connections<T> {
-<<<<<<< HEAD
-    private final ConcurrentHashMap<Integer, ConnectionHandler<T>> clients;
-    private final ConcurrentHashMap<String, CopyOnWriteArraySet<Integer>> topicSubscribers;
-    private final ConcurrentHashMap<String, ConcurrentHashMap<String, CopyOnWriteArraySet<String>>> messages;
-=======
    // connectionId -> ConnectionHandler<T>
    private final ConcurrentHashMap<Integer, ConnectionHandler<T>> clients;
    
@@ -18,17 +13,12 @@ public class StompConnections<T> implements Connections<T> {
    
    // connectionId -> (subscriptionId -> channel)
    private final ConcurrentHashMap<Integer, ConcurrentHashMap<String, String>> subscriptions;
->>>>>>> Frame
 
 
     public StompConnections() {
         clients = new ConcurrentHashMap<>();
         topicSubscribers = new ConcurrentHashMap<>();
-<<<<<<< HEAD
-        messages= new ConcurrentHashMap<>();
-=======
         subscriptions = new ConcurrentHashMap<>();
->>>>>>> Frame
     }
 
     @Override
@@ -73,27 +63,12 @@ public class StompConnections<T> implements Connections<T> {
             topicSubscribers.getOrDefault(channel, new CopyOnWriteArraySet<>()).remove(connectionId);
         }
     }
-<<<<<<< HEAD
-
-    public void saveMessage(String channel, String user, String message) {
-        messages
-            .computeIfAbsent(channel, k -> new ConcurrentHashMap<>())
-            .computeIfAbsent(user, k -> new CopyOnWriteArraySet<>())
-            .add(message);
-    }
-
-    public CopyOnWriteArraySet<String> getMessages(String channel, String user) {
-        return messages.getOrDefault(channel, new ConcurrentHashMap<>()).getOrDefault(user, new CopyOnWriteArraySet<>());
-    
-    }    
-=======
     public void broadcast(String channel, T message) {
         for (Integer connId : topicSubscribers.getOrDefault(channel, new CopyOnWriteArraySet<>())) {
             send(connId, message);
         }
     }
     
->>>>>>> Frame
     public int size() {
         return clients.size();
     }

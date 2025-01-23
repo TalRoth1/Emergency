@@ -1,9 +1,17 @@
 #include "../include/StompProtocol.h"
 
-std::string StompProtocol::encodeFrame(const std::string &command, const std::string &body) {
-    return command + "\n\n" + body + "\0";
+StompProtocol::StompProtocol():isLogin(false)
+{
 }
 
-std::string StompProtocol::decodeFrame(const std::string &frame) {
-    return frame; // For simplicity, return raw frame. Add parsing logic as needed.
+StompProtocol::~StompProtocol()
+{
+    connectionHandler = nullptr;
+}
+
+void StompProtocol::process(Frame &input)
+{
+    // רותם, כאן ממלאים את כל הלוגיקה של הפרוטוקול
+    // כלומר, כאן נבדוק את סוג הפריים ונטפל בהתאם
+    // לדוגמא, אם הפריים הוא קונקט, ניצור קונקשיון הנדלר עם הארגומנטים המתאימים וכן הלאה לשאר הפריימים האפשריים
 }
