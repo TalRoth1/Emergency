@@ -174,6 +174,8 @@ void StompClient::sendCommand(const std::string &command) {
             std::lock_guard<std::mutex> lock(queueMutex);
             messageQueue.push(frame.str());
             std::cout << "command join -> push frame to queue: " << frame.str() << std::endl;
+            std::cout << "num of tasks: " << messageQueue.size() << std::endl;
+
             queueCond.notify_one();
         }
 
@@ -244,6 +246,8 @@ void StompClient::sendCommand(const std::string &command) {
             std::lock_guard<std::mutex> lock(queueMutex);
             messageQueue.push(frame.str()); //why push string not frame?? 
             std::cout << "send command -> push frame to queue: " << frame.str() << std::endl;
+            std::cout << "num of tasks: " << messageQueue.size() << std::endl;
+
             queueCond.notify_one();
         }
 
@@ -323,6 +327,8 @@ void StompClient::handleReportCommand(const std::string &file) {
             std::lock_guard<std::mutex> lock(queueMutex);
             messageQueue.push(frame.str());
             std::cout << "report command -> push frame to queue: " << frame.str() << std::endl;
+            std::cout << "num of tasks: " << messageQueue.size() << std::endl;
+
         }
     }
     // Notify once, after pushing all frames
