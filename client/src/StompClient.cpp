@@ -72,6 +72,8 @@ void StompClient::stop() {
     running = false;
 
     // Join threads if they were started
+     queueCond.notify_all();
+
     if (commThread.joinable()) {
         commThread.join();
     }
