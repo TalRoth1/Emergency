@@ -17,7 +17,8 @@ void Communication::start()
         return;
     }
     isRunning.store(true);
-    commThread = std::thread(&Communication::process, this);
+    getThread = std::thread(&Communication::process, this);
+    sendThread = std::thread(&Communication::receive, this);
 }
 
 void Communication::stop()
@@ -25,9 +26,13 @@ void Communication::stop()
     if (isRunning.load())
     {
         isRunning.store(false);
-        if (commThread.joinable())
+        if (sendThread.joinable())
         {
-            commThread.join();
+            sendThread.join();
+        }
+        if (getThread.joinable())
+        {
+            getThread.join();
         }
     }
 }
@@ -37,6 +42,18 @@ void Communication::process()
     while (isRunning.load())
     {
         Frame input = inputQueue->pop();
-        stompProtocol->process(input);
+        bool worked = stompProtocol->process(input);
+        if(input.getCommand() == "CONNECT" && worked)
+        {
+            isRunning.store(true);
+        }
+    }
+}
+
+void Communication::receive()
+{
+    while(isRunning.load())
+    {
+    this -> stompProtocol->receive();
     }
 }

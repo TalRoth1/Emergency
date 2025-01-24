@@ -10,10 +10,12 @@
 
 int main(int argc, char *argv[])
 {
+    int subId = 0;
+    int receiptId = 0;
     keyboardInput keyboard;
-    ThreadSafeQueue queue;
+    ThreadSafeQueue sendQueue;
     StompProtocol stompProtocol;
-    Communication communication(&stompProtocol, &queue);
+    Communication communication(&stompProtocol, &sendQueue);
     keyboard.start();
     communication.start();
     bool flag = true;
@@ -26,11 +28,12 @@ int main(int argc, char *argv[])
             {
                 flag = false;
             }
+            std::string stringFrame = Utilities::translate(input, subId++, receiptId++);
+            Frame frame = Frame::fromString(stringFrame);
+            sendQueue.push(frame);
         }
-        Frame frame = Frame::fromString(input);
-        queue.push(frame);
     }
     keyboard.stop();
+    communication.stop();
     return 0;
-
 }

@@ -11,13 +11,15 @@ class Communication
 private:
     StompProtocol *stompProtocol;
     std::atomic<bool> isRunning;  
-    std::thread commThread;   
-    ThreadSafeQueue *inputQueue;    
+    std::thread sendThread;
+    std::thread getThread;
+    ThreadSafeQueue *inputQueue;
 
     void process();
+    void receive();
 
 public:
-    explicit Communication(StompProtocol *stompProtocol, ThreadSafeQueue *inputQueue);
+    Communication(StompProtocol *stompProtocol, ThreadSafeQueue *inputQueue);
     ~Communication();
 
     void start();

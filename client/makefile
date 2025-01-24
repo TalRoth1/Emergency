@@ -3,8 +3,8 @@ LDFLAGS := -lboost_system -lpthread
 
 all: StompEMIClient
 
-StompEMIClient: bin/ConnectionHandler.o bin/StompClient.o bin/event.o bin/keyboardInput.o bin/StompProtocol.o bin/Utilities.o
-	g++ -o bin/StompEMIClient bin/ConnectionHandler.o bin/StompClient.o bin/event.o bin/keyboardInput.o bin/StompProtocol.o bin/Utilities.o $(LDFLAGS)
+StompEMIClient: bin/ConnectionHandler.o bin/StompClient.o bin/event.o bin/keyboardInput.o bin/StompProtocol.o bin/Utilities.o bin/Communication.o bin/Frame.o bin/ThreadSafeQueue.o
+	g++ -o bin/StompEMIClient bin/ConnectionHandler.o bin/StompClient.o bin/event.o bin/keyboardInput.o bin/StompProtocol.o bin/Utilities.o bin/Communication.o bin/Frame.o bin/ThreadSafeQueue.o $(LDFLAGS)
 
 bin/ConnectionHandler.o: src/ConnectionHandler.cpp
 	g++ $(CFLAGS) -o bin/ConnectionHandler.o src/ConnectionHandler.cpp
@@ -23,6 +23,15 @@ bin/StompProtocol.o: src/StompProtocol.cpp
 
 bin/Utilities.o: src/Utilities.cpp
 	g++ $(CFLAGS) -o bin/Utilities.o src/Utilities.cpp
+
+bin/Communication.o: src/Communication.cpp
+	g++ $(CFLAGS) -o bin/Communication.o src/Communication.cpp
+
+bin/Frame.o: src/Frame.cpp
+	g++ $(CFLAGS) -o bin/Frame.o src/Frame.cpp
+
+bin/ThreadSafeQueue.o: src/ThreadSafeQueue.cpp
+	g++ $(CFLAGS) -o bin/ThreadSafeQueue.o src/ThreadSafeQueue.cpp
 
 .PHONY: clean
 clean:
