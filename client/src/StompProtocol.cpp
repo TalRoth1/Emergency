@@ -22,8 +22,10 @@ bool StompProtocol::process(Frame &input)
         std::string host = Utilities::splitString(hostPort, ':')[0];
         std::string port = Utilities::splitString(hostPort, ':')[1];
         this -> connectionHandler = new ConnectionHandler(host, std::stoi(port));
+        std::string correctFrame = "CONNECT\naccept-version:1.2\nhost:stomp.cs.bgu.ac.il\nlogin:" + arg["login"] +"\npasscode:" + arg["passcode"] + "\n\n\0";
+        std::cout << correctFrame << std::endl;
         connectionHandler -> connect();
-        connectionHandler -> sendFrameAscii(input.toString(), '\0');
+        connectionHandler -> sendFrameAscii(correctFrame, '\0');
         isLogin.store(true);
         return true;
     }
