@@ -130,5 +130,87 @@ std::string Utilities::readJsonFileAsString(const std::string &filePath)
 std::vector<Event> Utilities::parseIntoEvents(const std::string& jsonString)
 {
     std::vector<Event> events;
-    size_t  eventsStart = jsonString.find("\"events\": [");
+
+    // Find the channel name
+    size_t channelNameStart = jsonString.find("\"channel_name\":");
+    size_t channelNameValueStart = jsonString.find("\"", channelNameStart + 15) + 1;
+    size_t channelNameValueEnd = jsonString.find("\"", channelNameValueStart);
+    std::string channelName = jsonString.substr(channelNameValueStart, channelNameValueEnd - channelNameValueStart);
+
+    // Find the start of the "events" array
+    size_t eventsStart = jsonString.find("\"events\": [", channelNameValueEnd);
+    size_t eventsEnd = jsonString.find("]", eventsStart);
+
+    size_t eventStart = jsonString.find("{", eventsStart);
+    while (eventStart != std::string::npos && eventStart < eventsEnd) {
+        // Find the end of this event
+        size_t eventEnd = jsonString.find("}", eventStart);
+
+        // Parse individual fields of the event
+        size_t eventNameStart = jsonString.find("\"event_name\":", eventStart);
+        size_t eventNameValueStart = jsonString.find("\"", eventNameStart + 13) + 1;
+        size_t eventNameValueEnd = jsonString.find("\"", eventNameValueStart);
+        std::string eventName = jsonString.substr(eventNameValueStart, eventNameValueEnd - eventNameValueStart);
+
+        size_t cityStart = jsonString.find("\"city\":", eventNameValueEnd);
+        size_t cityValueStart = jsonString.find("\"", cityStart + 8) + 1;
+        size_t cityValueEnd = jsonString.find("\"", cityValueStart);
+        std::string city = jsonString.substr(cityValueStart, cityValueEnd - cityValueStart);
+
+        size_t dateTimeStart = jsonString.find("\"date_time\":", cityValueEnd);
+        size_t dateTimeValueStart = jsonString.find(":", dateTimeStart) + 1;
+        size_t dateTimeValueEnd = jsonString.find(",", dateTimeValueStart);
+        int dateTime = std::stoi(jsonString.substr(dateTimeValueStart, dateTimeValueEnd - dateTimeValueStart));
+
+        size_t descriptionStart = jsonString.find("\"description\":", dateTimeValueEnd);
+        size_t descriptionValueStart = jsonString.find("\"", descriptionStart + 14) + 1;
+        size_t descriptionValueEnd = descriptionValueStart;
+
+        // Handle escaped characters and find the true end of the description
+        std::string description;
+        while (descriptionValueEnd < jsonString.size()) {
+            descriptionValueEnd = jsonString.find("\"", descriptionValueEnd);
+            if (descriptionValueEnd == std::string::npos || jsonString[descriptionValueEnd - 1] != '\\') {
+                break; // Found the correct end of the description
+            }
+            descriptionValueEnd++; // Skip the escaped quote
+        }
+        description = jsonString.substr(descriptionValueStart, descriptionValueEnd - descriptionValueStart);
+
+        // Replace escaped characters (e.g., \" and \n)
+        for (size_t pos = description.find("\\"); pos != std::string::npos; pos = description.find("\\", pos)) {
+            if (description[pos + 1] == 'n') {
+                description.replace(pos, 2, "\n");
+            } else if (description[pos + 1] == '\"') {
+                description.erase(pos, 1); // Remove the escape for quotes
+            } else {
+                description.erase(pos, 1); // Remove the backslash for other characters
+            }
+        }
+
+        size_t generalInfoStart = jsonString.find("\"general_information\":", descriptionValueEnd);
+        size_t generalInfoEnd = jsonString.find("}", generalInfoStart);
+        std::map<std::string, std::string> generalInformation;
+
+        size_t activeStart = jsonString.find("\"active\":", generalInfoStart);
+        size_t activeValueStart = jsonString.find(":", activeStart) + 1;
+        size_t activeValueEnd = jsonString.find(",", activeValueStart);
+        std::string active = jsonString.substr(activeValueStart, activeValueEnd - activeValueStart);
+        generalInformation["active"] = active.find("true") != std::string::npos ? "true" : "false";
+
+        size_t forcesArrivalStart = jsonString.find("\"forces_arrival_at_scene\":", activeValueEnd);
+        size_t forcesArrivalValueStart = jsonString.find(":", forcesArrivalStart) + 1;
+        size_t forcesArrivalValueEnd = jsonString.find("}", forcesArrivalValueStart);
+        std::string forcesArrival = jsonString.substr(forcesArrivalValueStart, forcesArrivalValueEnd - forcesArrivalValueStart);
+        generalInformation["forces_arrival_at_scene"] = forcesArrival.find("true") != std::string::npos ? "true" : "false";
+
+        // Create the Event object and add it to the vector
+        Event event(channelName, city, eventName, dateTime, description, generalInformation);
+        events.push_back(event);
+
+        // Find the next event
+        eventStart = jsonString.find("{", eventEnd);
+    }
+
+    return events;
 }

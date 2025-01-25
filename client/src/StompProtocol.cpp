@@ -15,7 +15,7 @@ StompProtocol::~StompProtocol()
 
 bool StompProtocol::process(Frame &input)
 {
-    if(input.getCommand() == "CONNECTED")
+    if(input.getCommand() == "CONNECT")
     {
         std::map<std::string, std::string> arg = input.getHeaders();
         std::string hostPort = arg["host"];
@@ -27,23 +27,69 @@ bool StompProtocol::process(Frame &input)
         isLogin.store(true);
         return true;
     }
-    else if(input.getCommand() == "SUMMARY")
-    {
-           std::cout<< "Summary recieved" << std::endl;
-           return true;
-    }
-    else
+    else if(input.getCommand() == "SUBSCRIBE")
     {
         if(!isLogin.load())
         {
             std::cout << "you need to login first" << std::endl;
             return false;
         }
-        else
+        std::map<std::string, std::string> arg = input.getHeaders();
+        std::string channel = arg["destination"];
+        std::string subId = arg["id"];
+        subscriptions.emplace(channel, subId);
+        connectionHandler -> sendFrameAscii(input.toString(), '\0');
+        return true;
+    }
+    else if(input.getCommand() == "UNSUBSCRIBE")
+    {
+        if(!isLogin.load())
         {
-            connectionHandler -> sendFrameAscii(input.toString(), '\0');
-            return true;
+            std::cout << "you need to login first" << std::endl;
+            return false;
         }
+        std::map<std::string, std::string> arg = input.getHeaders();
+        std::string channel = arg["destination"];
+        std::string subId = subscriptions[channel];
+        input.getHeaders()["id"] = subId;
+        subscriptions.erase(channel);
+        connectionHandler -> sendFrameAscii(input.toString(), '\0');
+        return true;
+    }
+    else if(input.getCommand() == "DISCONNECT")
+    {
+        if(!isLogin.load())
+        {
+            std::cout << "you need to login first" << std::endl;
+            return false;
+        }
+        isLogin.store(false);
+        connectionHandler->close();
+        return true;
+    }
+    else if(input.getCommand() == "SEND")
+    {
+        if(!isLogin.load())
+        {
+            std::cout << "you need to login first" << std::endl;
+            return false;
+        }
+        connectionHandler->sendFrameAscii(input.toString(), '\0');
+        return true;
+    }
+    else if(input.getCommand() == "SUMMARY")
+    {
+        if(!isLogin.load())
+        {
+            std::cout << "you need to login first" << std::endl;
+            return false;
+        }
+        std::cout<< "Summary recieved" << std::endl;
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }
 
@@ -64,9 +110,7 @@ void StompProtocol::receive()
             {
                 std::map<std::string, std::string> header = frame.getHeaders();
                 std::string channel = header["destination"];
-                
             }
         }
     }
-
 }
