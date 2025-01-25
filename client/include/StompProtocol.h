@@ -1,12 +1,24 @@
 #pragma once
 
 #include "../include/ConnectionHandler.h"
+#include "../include/Frame.h"
+#include "../include/event.h"
+
+#include <map>
 
 // TODO: implement the STOMP protocol
 class StompProtocol
 {
 private:
+    std::atomic<bool> isLogin; 
+    ConnectionHandler *connectionHandler;
+    std::map<std::string, std::string> subscriptions;
+    std::map<std::string, std::map <std::string, std::vector<Event>>> reports; // <Channel, <Username, Report>>
+    
 public:
-    std::string encodeFrame(const std::string &command, const std::string &body);
-    std::string decodeFrame(const std::string &frame);
+    StompProtocol();
+    ~StompProtocol();
+
+    bool process(Frame &input);
+    void receive();
 };

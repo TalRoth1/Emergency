@@ -3,33 +3,36 @@ LDFLAGS := -lboost_system -lpthread
 
 all: StompEMIClient
 
-StompEMIClient: bin bin/ConnectionHandler.o bin/StompClient.o bin/event.o bin/keyboardInput.o bin/StompProtocol.o bin/main.o
-	g++ -o bin/StompEMIClient bin/ConnectionHandler.o bin/StompClient.o bin/event.o bin/keyboardInput.o bin/StompProtocol.o bin/main.o $(LDFLAGS)
+StompEMIClient: bin/ConnectionHandler.o bin/StompClient.o bin/event.o bin/keyboardInput.o bin/StompProtocol.o bin/Utilities.o bin/Communication.o bin/Frame.o bin/ThreadSafeQueue.o
+	g++ -o bin/StompEMIClient bin/ConnectionHandler.o bin/StompClient.o bin/event.o bin/keyboardInput.o bin/StompProtocol.o bin/Utilities.o bin/Communication.o bin/Frame.o bin/ThreadSafeQueue.o $(LDFLAGS)
 
-bin:
-	mkdir -p bin
-
-bin/ConnectionHandler.o: src/ConnectionHandler.cpp include/ConnectionHandler.h
+bin/ConnectionHandler.o: src/ConnectionHandler.cpp
 	g++ $(CFLAGS) -o bin/ConnectionHandler.o src/ConnectionHandler.cpp
 
-bin/event.o: src/event.cpp include/event.h
+bin/event.o: src/event.cpp
 	g++ $(CFLAGS) -o bin/event.o src/event.cpp
 
-bin/StompClient.o: src/StompClient.cpp include/StompClient.h
+bin/StompClient.o: src/StompClient.cpp
 	g++ $(CFLAGS) -o bin/StompClient.o src/StompClient.cpp
 
-bin/StompProtocol.o: src/StompProtocol.cpp include/StompProtocol.h
-	g++ $(CFLAGS) -o bin/StompProtocol.o src/StompProtocol.cpp
-
-bin/keyboardInput.o: src/keyboardInput.cpp include/keyboardInput.h
+bin/keyboardInput.o: src/keyboardInput.cpp
 	g++ $(CFLAGS) -o bin/keyboardInput.o src/keyboardInput.cpp
 
-bin/main.o: src/main.cpp
-	g++ $(CFLAGS) -o bin/main.o src/main.cpp
+bin/StompProtocol.o: src/StompProtocol.cpp 
+	g++ $(CFLAGS) -o bin/StompProtocol.o src/StompProtocol.cpp 
 
-.PHONY: clean run
+bin/Utilities.o: src/Utilities.cpp
+	g++ $(CFLAGS) -o bin/Utilities.o src/Utilities.cpp
+
+bin/Communication.o: src/Communication.cpp
+	g++ $(CFLAGS) -o bin/Communication.o src/Communication.cpp
+
+bin/Frame.o: src/Frame.cpp
+	g++ $(CFLAGS) -o bin/Frame.o src/Frame.cpp
+
+bin/ThreadSafeQueue.o: src/ThreadSafeQueue.cpp
+	g++ $(CFLAGS) -o bin/ThreadSafeQueue.o src/ThreadSafeQueue.cpp
+
+.PHONY: clean
 clean:
 	rm -f bin/*
-
-run:
-	./bin/StompEMIClient

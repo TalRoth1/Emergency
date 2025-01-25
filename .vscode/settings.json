@@ -70,7 +70,8 @@
         "random": "cpp",
         "ranges": "cpp",
         "stop_token": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "queue": "cpp"
     },
     "makefile.makefilePath": "client/"
 }
