@@ -42,18 +42,37 @@ void Communication::process()
     while (isRunning.load())
     {
         Frame input = inputQueue->pop();
+        std::cout << "communication: pop frame" << input.toString() << std::endl;  
         bool worked = stompProtocol->process(input);
         if(input.getCommand() == "CONNECT" && worked)
         {
+            std::cout << "communication: connect " << std::endl;  
             isRunning.store(true);
+        }
+         if (!worked) {
+            isRunning.store(false);
+        }
+        // If the command was DISCONNECT, you can also force isRunning = false
+        if (input.getCommand() == "DISCONNECT") {
+            isRunning.store(false);
         }
     }
 }
 
 void Communication::receive()
 {
-    while(isRunning.load())
-    {
-    this -> stompProtocol->receive();
+    while (isRunning.load()) {
+        bool success = stompProtocol->receive();
+        if (!success) {
+            std::cerr << "Connection closed or read error. Stopping receive loop.\n";
+            // You should close the connection here using connectionHandler->close()
+            // if you haven't already closed it. Or do it inside receive().
+
+            // Mark isRunning as false so that the process() thread also sees it.
+            stompProtocol-> logout();
+
+            isRunning.store(false);
+            break;
+        }
     }
 }

@@ -20,5 +20,6 @@ public:
     ~StompProtocol();
 
     bool process(Frame &input);
-    void receive();
+    bool receive();//change to bool
+    void logout();
 };

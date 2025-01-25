@@ -22,9 +22,14 @@ bool StompProtocol::process(Frame &input)
         std::string host = Utilities::splitString(hostPort, ':')[0];
         std::string port = Utilities::splitString(hostPort, ':')[1];
         this -> connectionHandler = new ConnectionHandler(host, std::stoi(port));
+       
         std::string correctFrame = "CONNECT\naccept-version:1.2\nhost:stomp.cs.bgu.ac.il\nlogin:" + arg["login"] +"\npasscode:" + arg["passcode"] + "\n\n\0";
         std::cout << correctFrame << std::endl;
-        connectionHandler -> connect();
+        
+        if (!connectionHandler->connect()) {
+            std::cerr << "Failed to connect to server." << std::endl;
+            return false;
+        }
         connectionHandler -> sendFrameAscii(correctFrame, '\0');
         isLogin.store(true);
         return true;
@@ -39,8 +44,16 @@ bool StompProtocol::process(Frame &input)
         std::map<std::string, std::string> arg = input.getHeaders();
         std::string channel = arg["destination"];
         std::string subId = arg["id"];
+        
+        if (subscriptions.find(channel) != subscriptions.end()) {
+            std::cout << "Error: Already subscribed to channel '" << channel << "'." << std::endl;
+            return true;// not stop the client 
+        }
+       // subscriptions[channel] = subId;
         subscriptions.emplace(channel, subId);
         connectionHandler -> sendFrameAscii(input.toString(), '\0');
+        std::cout << "subscribe command to " << channel<< " with subid "<< subId <<std::endl;  
+
         return true;
     }
     else if(input.getCommand() == "UNSUBSCRIBE")
@@ -52,10 +65,15 @@ bool StompProtocol::process(Frame &input)
         }
         std::map<std::string, std::string> arg = input.getHeaders();
         std::string channel = arg["destination"];
+        if (subscriptions.find(channel) == subscriptions.end()) {
+            return true;// we dont stop the client
+        }
+
         std::string subId = subscriptions[channel];
         input.getHeaders()["id"] = subId;
         subscriptions.erase(channel);
         connectionHandler -> sendFrameAscii(input.toString(), '\0');
+        std::cout << "unsubscribe command to " << channel<< " with subid "<< subId <<std::endl; 
         return true;
     }
     else if(input.getCommand() == "DISCONNECT")
@@ -67,6 +85,7 @@ bool StompProtocol::process(Frame &input)
         }
         isLogin.store(false);
         connectionHandler->close();
+        std::cout << "disconnect command" << std::endl; 
         return true;
     }
     else if(input.getCommand() == "SEND")
@@ -77,6 +96,7 @@ bool StompProtocol::process(Frame &input)
             return false;
         }
         connectionHandler->sendFrameAscii(input.toString(), '\0');
+        std::cout << "send command send to cH" << std::endl;   
         return true;
     }
     else if(input.getCommand() == "SUMMARY")
@@ -86,7 +106,7 @@ bool StompProtocol::process(Frame &input)
             std::cout << "you need to login first" << std::endl;
             return false;
         }
-        std::cout<< "Summary recieved" << std::endl;
+        std::cout<< "Summary command recieved" << std::endl;// where is actually handlded?
         return true;
     }
     else
@@ -94,25 +114,39 @@ bool StompProtocol::process(Frame &input)
         return false;
     }
 }
+void StompProtocol::logout()
+{
+    isLogin.store(false);
+     if (connectionHandler) {
+        connectionHandler->close();
+     }
+    subscriptions.clear();
+}
 
-void StompProtocol::receive()
+bool StompProtocol::receive()
 {
     if(!isLogin.load())
     {
-        return;
+        return true;
     }
+     if (connectionHandler == nullptr) {
+        // If there's no connectionHandler, can't read.
+        return false;
+    }
+
     std::string input;
-    if (connectionHandler != nullptr)
-    {
-        if(connectionHandler -> getFrameAscii(input, '\0'))
+   
+    if(!connectionHandler -> getFrameAscii(input, '\0'))
         {
-            std::cout << input << std::endl;
-            Frame frame = Frame::fromString(input);
-            if(frame.getCommand() == "MESSAGE")
-            {
-                std::map<std::string, std::string> header = frame.getHeaders();
-                std::string channel = header["destination"];
-            }
+            return false;
+
         }
-    }
+        std::cout << input << std::endl;
+        Frame frame = Frame::fromString(input);
+        if(frame.getCommand() == "MESSAGE")
+        {
+            std::map<std::string, std::string> header = frame.getHeaders();
+            std::string channel = header["destination"];
+        }   
+    return true;      
 }

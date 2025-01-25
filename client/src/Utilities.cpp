@@ -6,11 +6,16 @@
 #include <string>
 #include <iostream>
 
+std::map<std::string,int> Utilities::channelToSubId;
+std::map<int,std::string> Utilities::subIdToChannel;
+
+int Utilities::nextSubId = 1;
+int Utilities::nextReceiptId = 1;
 
 std::vector<std::string> Utilities::splitString(const std::string& str, char delimiter)
 {
     std::vector<std::string> tokens;
-    size_t start = 0, end;
+    size_t start = 0,  end = 0;
     while ((end = str.find(delimiter, start)) != std::string::npos)
     {
         tokens.push_back(str.substr(start, end - start));
@@ -33,15 +38,23 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
 {
     std::string frame = "";
     std::vector<std::string> arg = Utilities::splitString(input, ' ');
+    if (arg.empty()) {
+        std::cerr << "Empty command." << std::endl;
+        return frame; // empty
+    }
+    
     std::string command = arg[0];
+    
     if(command == "login")
     {
         if (arg.size() != 4)
         {
             std::cout << "login requiers: {host} {username} {password}" << std::endl;
+            return frame; // or do simthing else? 
         }
         else
         {
+            int receipt = nextReceiptId++;
             frame += "CONNECT\n";
             frame += "accept-version:1.2\n";
             frame += "host:" + arg[1] + "\n";
@@ -49,6 +62,7 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
             frame += "passcode:" + arg[3] + "\n";
             frame += "\n";
             frame += "\0";
+            std::cout << "sending login frame" << frame << std::endl;    
         }
     }
     else if(command == "report")
@@ -59,8 +73,10 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
         }
         else
         {
+            int receipt = nextReceiptId++;
             std::string data = Utilities::readJsonFileAsString(arg[1]);
             frame += "SEND\n";
+            std::cout << "sending report frame" << frame << std::endl;  
         }
 
     }
@@ -69,35 +85,62 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
         if(arg.size() != 2)
         {
             std::cout << "join requiers: {channel name}" << std::endl;
+            return frame;
+
         }
-        else
-        {
+
+        std::string channel = arg[1];
+
+        // If not already subscribed, create a new subId
+        if (channelToSubId.find(channel) == channelToSubId.end()) {
+            channelToSubId[channel] = nextSubId;
+            subIdToChannel[nextSubId] = channel;
+            nextSubId++;
+        } 
+            int subId = channelToSubId[(arg[1])];
+            int receipt = nextReceiptId++;
+
             frame += "SUBSCRIBE\n";
             frame += "destination:" + arg[1] + "\n";
             frame += "id:" + std::to_string(subId) + "\n";
             frame += "receipt:" + std::to_string(receiptId) + "\n";
             frame += "\n";
             frame += "\0";
-        }
+            std::cout << "sending join frame" << frame << std::endl;    
     }
     else if(command == "exit")
     {
         if(arg.size() != 2)
         {
             std::cout << "exit requiers: {channel name}" << std::endl;
+            return frame;
         }
+        std::string channel = arg[1];
+
+        if (channelToSubId.find(channel) == channelToSubId.end()) {
+            std::cerr << "Error: Not subscribed to channel '" << channel << "'." << std::endl;
+            return frame; // no frame
+        }
+        int subId = channelToSubId[channel];
+        channelToSubId.erase(channel);
+        subIdToChannel.erase(subId);
+        int receipt = nextReceiptId++;
+
+
         frame += "UNSUBSCRIBE\n";
-        frame += "destination:" + arg[1] + "\n";
+        // frame += "destination:" + arg[1] + "\n"; not suppose to be 
         frame += "id:" + std::to_string(subId) + "\n";
         frame += "receipt:" + std::to_string(receiptId) + "\n";
         frame += "\n";
         frame += "\0";
+        std::cout << "sending exit frame" << frame << std::endl;    
     }
     else if(command == "logout")
     {
         if(arg.size() != 1)
         {
             std::cout << "too many arguments to logout" << std::endl;
+            return frame;
         }
         else
         {
@@ -105,6 +148,7 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
             frame += "receipt:" + std::to_string(receiptId) + "\n";
             frame += "\n";
             frame += "\0";
+            std::cout << "sending logout frame" << frame << std::endl;      
         }
     }
     else

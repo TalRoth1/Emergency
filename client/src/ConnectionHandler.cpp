@@ -16,7 +16,7 @@ ConnectionHandler::~ConnectionHandler() {
 }
 
 bool ConnectionHandler::connect() {
-	std::cout << "Starting connect to "
+	std::cout << "CH: Starting connect to "
 	          << host_ << ":" << port_ << std::endl;
 	try {
 		tcp::endpoint endpoint(boost::asio::ip::address::from_string(host_), port_); // the server endpoint
@@ -89,12 +89,14 @@ bool ConnectionHandler::getFrameAscii(std::string &frame, char delimiter) {
 		std::cerr << "recv failed2 (Error: " << e.what() << ')' << std::endl;
 		return false;
 	}
+	std::cout << " CH: get frame asci: " << frame << std::endl;	
 	return true;
 }
 
 bool ConnectionHandler::sendFrameAscii(const std::string &frame, char delimiter) {
 	bool result = sendBytes(frame.c_str(), frame.length());
 	if (!result) return false;
+	std::cout << " CH: send frame asci: " << frame << std::endl;
 	return sendBytes(&delimiter, 1);
 }
 
