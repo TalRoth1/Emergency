@@ -48,9 +48,9 @@ bool StompProtocol::process(Frame &input)
         std::map<std::string, std::string> arg = input.getHeaders();
         std::string channel = arg["destination"];
         std::string subId = arg["id"];
+
         
-        if (subscriptions.find(channel) != subscriptions.end())
-        {
+        if (subscriptions.find(channel) != subscriptions.end()) {
             std::cout << "Error: Already subscribed to channel '" << channel << "'." << std::endl;
             return true;// not stop the client 
         }
@@ -60,26 +60,29 @@ bool StompProtocol::process(Frame &input)
 
         return true;
     }
-    else if(input.getCommand() == "UNSUBSCRIBE")
+    else if(input.getCommand() == "UNSUBSCRIBE")// here was updated by me
     {
         if(!isLogin.load())
         {
             std::cout << "you need to login first" << std::endl;
             return false;
         }
+        else{
         std::map<std::string, std::string> arg = input.getHeaders();
-        std::string channel = arg["destination"];
-        if (subscriptions.find(channel) == subscriptions.end())
-        {
-            return true;
+        std::string idToRemove = arg["id"];
+       
+        for (auto it = subscriptions.begin(); it != subscriptions.end(); ++it) {
+            if (it->second == idToRemove) {
+        // Found the channel that was subscribed with subId = idToRemove
+                subscriptions.erase(it);
+                break; // done removing from the map
+            }
         }
-
-        std::string subId = subscriptions[channel];
-        input.getHeaders()["id"] = subId;
-        subscriptions.erase(channel);
         connectionHandler -> sendFrameAscii(input.toString(), '\0');
         return true;
-    }
+        }
+    
+    } // untill here
     else if(input.getCommand() == "DISCONNECT")
     {
         if(!isLogin.load())
@@ -87,8 +90,7 @@ bool StompProtocol::process(Frame &input)
             std::cout << "you need to login first" << std::endl;
             return false;
         }
-        isLogin.store(false);
-        connectionHandler->close();
+        connectionHandler->sendFrameAscii(input.toString(), '\0');
         return true;
     }
     else if(input.getCommand() == "SEND")
@@ -138,8 +140,9 @@ void StompProtocol::handleSummary(const Frame &frame) {
         std::cout << "No events for channel=" << channel << ", user=" << user << std::endl;
         return;
     }
-
+ 
     auto &vec = receivedEvents[key];
+    //need to ass sorting!!!!!!!!!!!!!!!!!!!!!
     std::ofstream outFile(file);
     if (!outFile.is_open()) {
         std::cerr << "Failed to open file " << file << std::endl;

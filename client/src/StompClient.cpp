@@ -1,4 +1,4 @@
-#include "../include/keyboardInput.h"
+#include "../include/keyBoardInput.h"
 #include "../include/Utilities.h"
 #include "../include/ThreadSafeQueue.h"
 #include "../include/ConnectionHandler.h"
@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
         std::string input;
         if(keyboard.getNextInput(input))
         {
-            std::string stringFrame = Utilities::translate(input, subId++, receiptId++);
+            std::string stringFrame = Utilities::translate(input, subId++, receiptId++); 
             if(!stringFrame.empty())
             {
                 Frame frame = Frame::fromString(stringFrame);

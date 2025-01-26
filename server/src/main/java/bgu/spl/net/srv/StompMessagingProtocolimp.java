@@ -70,7 +70,6 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         // If new user, add to map
         if(activeUsers.contains(login))
         {
-            System.out.print("Reached here");
             connections.send(connectionId, createErrorFrame("User already logged in"));
             return;
         }
@@ -183,10 +182,7 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
 
     private void handleDisconnect(frame msg) {
         String receipt = msg.getHeader("receipt");
-        shouldTerminate = true;
-        // remove from active
-        activeUsers.remove(connectionId);
-
+        
         // Return RECEIPT if needed
         if (receipt != null) {
             frame receiptFrame = new frame();
@@ -194,6 +190,9 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
             receiptFrame.addHeader("receipt-id", receipt);
             connections.send(connectionId, receiptFrame);
         }
+        shouldTerminate = true;
+        // remove from active
+        activeUsers.remove(connectionId);
         connections.disconnect(connectionId);
     }
 
