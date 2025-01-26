@@ -42,11 +42,9 @@ void Communication::process()
     while (isRunning.load())
     {
         Frame input = inputQueue->pop();
-        std::cout << "communication: pop frame" << input.toString() << std::endl;  
         bool worked = stompProtocol->process(input);
         if(input.getCommand() == "CONNECT" && worked)
         {
-            std::cout << "communication: connect " << std::endl;  
             isRunning.store(true);
         }
          if (!worked) {
@@ -61,7 +59,8 @@ void Communication::process()
 
 void Communication::receive()
 {
-    while (isRunning.load()) {
+    while (isRunning.load())
+    {
         bool success = stompProtocol->receive();
         if (!success) {
             std::cerr << "Connection closed or read error. Stopping receive loop.\n";

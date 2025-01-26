@@ -29,7 +29,6 @@ bool StompProtocol::process(Frame &input)
         this -> connectionHandler = new ConnectionHandler(host, std::stoi(port));
        
         std::string correctFrame = "CONNECT\naccept-version:1.2\nhost:stomp.cs.bgu.ac.il\nlogin:" + arg["login"] +"\npasscode:" + arg["passcode"] + "\n\n\0";
-        std::cout << correctFrame << std::endl;
         
         if (!connectionHandler->connect()) {
             std::cerr << "Failed to connect to server." << std::endl;
@@ -57,7 +56,6 @@ bool StompProtocol::process(Frame &input)
        // subscriptions[channel] = subId;
         subscriptions.emplace(channel, subId);
         connectionHandler -> sendFrameAscii(input.toString(), '\0');
-        std::cout << "subscribe command to " << channel<< " with subid "<< subId <<std::endl;  
 
         return true;
     }
@@ -78,7 +76,6 @@ bool StompProtocol::process(Frame &input)
         input.getHeaders()["id"] = subId;
         subscriptions.erase(channel);
         connectionHandler -> sendFrameAscii(input.toString(), '\0');
-        std::cout << "unsubscribe command to " << channel<< " with subid "<< subId <<std::endl; 
         return true;
     }
     else if(input.getCommand() == "DISCONNECT")
@@ -90,7 +87,6 @@ bool StompProtocol::process(Frame &input)
         }
         isLogin.store(false);
         connectionHandler->close();
-        std::cout << "protocol: disconnect command" << std::endl; 
         return true;
     }
     else if(input.getCommand() == "SEND")
@@ -100,8 +96,7 @@ bool StompProtocol::process(Frame &input)
             std::cout << "you need to login first" << std::endl;
             return false;
         }
-        connectionHandler->sendFrameAscii(input.toString(), '\0');
-        std::cout << "send command send to cH" << std::endl;   
+        connectionHandler->sendFrameAscii(input.toString(), '\0'); 
         return true;
     }
     else if(input.getCommand() == "SUMMARY")
@@ -114,7 +109,6 @@ bool StompProtocol::process(Frame &input)
 
         handleSummary(input);
         std::cout<< "Summary command recieved" << std::endl;// where is actually handlded?
-        
     }
     else
     {
@@ -129,17 +123,13 @@ void StompProtocol::logout()
         connectionHandler->close();
      }
     subscriptions.clear();
-    std::cout << "protocol: logout" << std::endl;
 }
 void StompProtocol::handleSummary(const Frame &frame) {
     // Read channel, user, file from headers
     const auto &h = frame.getHeaders();
     std::string channel = h.at("channel");
-    std::string user    = h.at("user");
-    std::string file    = h.at("file");
-
-    std::cout << "StompProtocol::handleSummary => channel=" << channel
-              << ", user=" << user << ", file=" << file << std::endl;
+    std::string user = h.at("user");
+    std::string file = h.at("file");
 
     auto key = std::make_pair(channel, user);
     if (receivedEvents.find(key) == receivedEvents.end()) {
@@ -172,7 +162,6 @@ void StompProtocol::handleSummary(const Frame &frame) {
         outFile << "  description:\n" << ev.get_description() << "\n";
     }
     outFile.close();
-    std::cout << "Summary has been written to " << file << std::endl;
 }
 
 std::string StompProtocol::epochToDate(int epoch) {
@@ -198,14 +187,15 @@ bool StompProtocol::receive()
     if(!connectionHandler -> getFrameAscii(input, '\0'))
         {
             return false;
-
         }
-        std::cout << input << std::endl;
         Frame frame = Frame::fromString(input);
         if(frame.getCommand() == "MESSAGE")
         {
+            std::cout << input << std::endl;
             std::map<std::string, std::string> header = frame.getHeaders();
             std::string channel = header["destination"];
+            std::string body = frame.getBody();
+            std::cout << body << std::endl;
         }   
     return true;      
 }

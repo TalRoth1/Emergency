@@ -30,10 +30,12 @@ int main(int argc, char *argv[])
                 stompProtocol.logout(); 
                 std::cout << "main : logout" << std::endl; 
             }
-            std::string stringFrame = Utilities::translate(input, subId++, receiptId++);
-            Frame frame = Frame::fromString(stringFrame);
-            sendQueue.push(frame);
-            std::cout << "push frame to queue" << frame.toString() << std::endl;  
+            std::string stringFrame = Utilities::translate(input, subId++, receiptId++); 
+            if(!stringFrame.empty())
+            {
+                Frame frame = Frame::fromString(stringFrame);
+                sendQueue.push(frame);
+            }
         }
     }
     keyboard.stop();

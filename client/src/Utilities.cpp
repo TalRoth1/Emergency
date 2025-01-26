@@ -37,11 +37,11 @@ void Utilities::split_str(const std::string &str, char delim, std::vector<std::s
 
 std::string Utilities::translate(std::string &input, int subId, int receiptId)
 {
-    std::string frame = "";
+    std::string result = "";
     std::vector<std::string> arg = Utilities::splitString(input, ' ');
     if (arg.empty()) {
         std::cerr << "Empty command." << std::endl;
-        return frame; // empty
+        return ""; // empty
     }
     
     std::string command = arg[0];
@@ -51,20 +51,20 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
         if (arg.size() != 4)
         {
             std::cout << "login requiers: {host} {username} {password}" << std::endl;
-            return frame; // or do simthing else? 
+            return ""; // or do simthing else? 
         }
         else
         {
-             std::string currentUser = arg[2];  
+            std::string currentUser = arg[2];  
             int receipt = nextReceiptId++;
-            frame += "CONNECT\n";
-            frame += "accept-version:1.2\n";
-            frame += "host:" + arg[1] + "\n";
-            frame += "login:" + arg[2] + "\n";
-            frame += "passcode:" + arg[3] + "\n";
-            frame += "\n";
-            frame += "\0";
-            std::cout << "sending login frame" << frame << std::endl;    
+            result += "CONNECT\n";
+            result += "accept-version:1.2\n";
+            result += "host:" + arg[1] + "\n";
+            result += "login:" + arg[2] + "\n";
+            result += "passcode:" + arg[3] + "\n";
+            result += "\n";
+            result += "\0";
+            return result;
         }
     }
     else if(command == "report")
@@ -72,6 +72,7 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
         if(arg.size() != 2)
         {
             std::cout << "report requiers: {file path}" << std::endl;
+            return "";
         }
         else
         {
@@ -88,27 +89,26 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
         }
 
         std::vector<Event> events = Utilities::parseIntoEvents(jsonString);
-        frame += "SEND\n";
+        result += "SEND\n";
         for (const Event &event : events) {
             
-            std::string userName =currentUser; 
-            frame += "destination:" + event.get_channel_name() + "\n";
-            frame += "\n"; 
-            frame += "user:" + userName + "\n"; 
-            frame += "city" + event.get_city() + "\n";  
-            frame += "event_name" + event.get_name() + "\n"; 
-            frame += "date_time" + std::to_string(event.get_date_time()) + "\n";        
-            frame += "general_information:";
+            std::string userName = currentUser; 
+            result += "destination:" + event.get_channel_name() + "\n";
+            result += "\n"; 
+            result += "user:" + userName + "\n"; 
+            result += "city" + event.get_city() + "\n";  
+            result += "event_name" + event.get_name() + "\n"; 
+            result += "date_time" + std::to_string(event.get_date_time()) + "\n";        
+            result += "general_information:";
             for (const auto& info : event.get_general_information()) {
-                frame += info.first + "=" + info.second + ";";
+                result += info.first + "=" + info.second + ";";
             }
-            frame += "\n";
-            frame += "description" + event.get_description() + "\n";
-            frame += "\n";
-            frame += "\0";
-            std::cout << "sending report frame" << frame << std::endl;    
-            receiptId++;    
+            result += "\n";
+            result += "description" + event.get_description() + "\n";
+            result += "\n";
+            result += "\0";
             }
+            return result;
         }
                 
     }
@@ -117,10 +117,9 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
         if(arg.size() != 2)
         {
             std::cout << "join requiers: {channel name}" << std::endl;
-            return frame;
+            return "";
 
         }
-
         std::string channel = arg[1];
 
         // If not already subscribed, create a new subId
@@ -132,26 +131,26 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
             int subId = channelToSubId[(arg[1])];
             int receipt = nextReceiptId++;
 
-            frame += "SUBSCRIBE\n";
-            frame += "destination:" + arg[1] + "\n";
-            frame += "id:" + std::to_string(subId) + "\n";
-            frame += "receipt:" + std::to_string(receiptId) + "\n";
-            frame += "\n";
-            frame += "\0";
-            std::cout << "sending join frame" << frame << std::endl;    
+            result += "SUBSCRIBE\n";
+            result += "destination:" + arg[1] + "\n";
+            result += "id:" + std::to_string(subId) + "\n";
+            result += "receipt:" + std::to_string(receiptId) + "\n";
+            result += "\n";
+            result += "\0";
+            return result;
     }
     else if(command == "exit")
     {
         if(arg.size() != 2)
         {
             std::cout << "exit requiers: {channel name}" << std::endl;
-            return frame;
+            return "";
         }
         std::string channel = arg[1];
 
         if (channelToSubId.find(channel) == channelToSubId.end()) {
             std::cerr << "Error: Not subscribed to channel '" << channel << "'." << std::endl;
-            return frame; // no frame
+            return ""; // no frame
         }
         int subId = channelToSubId[channel];
         channelToSubId.erase(channel);
@@ -159,28 +158,27 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
         int receipt = nextReceiptId++;
 
 
-        frame += "UNSUBSCRIBE\n";
-        // frame += "destination:" + arg[1] + "\n"; not suppose to be 
-        frame += "id:" + std::to_string(subId) + "\n";
-        frame += "receipt:" + std::to_string(receiptId) + "\n";
-        frame += "\n";
-        frame += "\0";
-        std::cout << "sending exit frame" << frame << std::endl;    
+        result += "UNSUBSCRIBE\n";
+        // result += "destination:" + arg[1] + "\n"; not suppose to be 
+        result += "id:" + std::to_string(subId) + "\n";
+        result += "receipt:" + std::to_string(receiptId) + "\n";
+        result += "\n";
+        result += "\0";
+        return result;  
     }
     else if(command == "logout")
     {
         if(arg.size() != 1)
         {
             std::cout << "too many arguments to logout" << std::endl;
-            return frame;
+            return "";
         }
         else
         {
-            frame += "DISCONNECT\n";
-            frame += "receipt:" + std::to_string(receiptId) + "\n";
-            frame += "\n";
-            frame += "\0";
-            std::cout << "sending logout frame" << frame << std::endl;      
+            result += "DISCONNECT\n";
+            result += "receipt:" + std::to_string(receiptId) + "\n";
+            result += "\n";
+            result += "\0";   
         }
     }
     
@@ -191,13 +189,13 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
         }
         else
         {
-            frame+= "SUMMARY\n";    
-            frame+= "channel:" + arg[1] + "\n";
-            frame+= "user:" + arg[2] + "\n";
-            frame+= "file:" + arg[3] + "\n";
-            frame+= "\n";
-            frame+= "\0";
-            std::cout << "utilities: sending summary frame" << frame << std::endl;
+            result+= "SUMMARY\n";    
+            result+= "channel:" + arg[1] + "\n";
+            result+= "user:" + arg[2] + "\n";
+            result+= "file:" + arg[3] + "\n";
+            result+= "\n";
+            result+= "\0";
+            return result;
         }
     }
 
@@ -206,7 +204,7 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
             std::cout << "Unkown Command" << std::endl;
         }
 
-    return frame;
+    return "";
 }
 
 std::string Utilities::readJsonFileAsString(const std::string &filePath)

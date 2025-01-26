@@ -1,6 +1,7 @@
 #include "../include/Frame.h"
 
 #include <sstream>
+#include <iostream>
 
 
 Frame::Frame(std::string command, std::map<std::string, std::string> headers, std::string body)
@@ -35,7 +36,7 @@ void Frame::addHeader(std::string key, std::string value)
 
 std::string Frame::toString()
 {
-    std::string str = this->command + "\n";
+    std::string str = this -> command + "\n";
     for (std::map<std::string, std::string>::iterator it = this->headers.begin(); it != this->headers.end(); it++)
     {
         str += it->first + ":" + it->second + "\n";
