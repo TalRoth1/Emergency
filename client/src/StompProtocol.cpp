@@ -49,7 +49,8 @@ bool StompProtocol::process(Frame &input)
         std::string channel = arg["destination"];
         std::string subId = arg["id"];
         
-        if (subscriptions.find(channel) != subscriptions.end()) {
+        if (subscriptions.find(channel) != subscriptions.end())
+        {
             std::cout << "Error: Already subscribed to channel '" << channel << "'." << std::endl;
             return true;// not stop the client 
         }
@@ -68,8 +69,9 @@ bool StompProtocol::process(Frame &input)
         }
         std::map<std::string, std::string> arg = input.getHeaders();
         std::string channel = arg["destination"];
-        if (subscriptions.find(channel) == subscriptions.end()) {
-            return true;// we dont stop the client
+        if (subscriptions.find(channel) == subscriptions.end())
+        {
+            return true;
         }
 
         std::string subId = subscriptions[channel];
@@ -138,7 +140,6 @@ void StompProtocol::handleSummary(const Frame &frame) {
     }
 
     auto &vec = receivedEvents[key];
-    //need to ass sorting!!!!!!!!!!!!!!!!!!!!!
     std::ofstream outFile(file);
     if (!outFile.is_open()) {
         std::cerr << "Failed to open file " << file << std::endl;
@@ -185,17 +186,17 @@ bool StompProtocol::receive()
     std::string input;
    
     if(!connectionHandler -> getFrameAscii(input, '\0'))
-        {
-            return false;
-        }
-        Frame frame = Frame::fromString(input);
-        if(frame.getCommand() == "MESSAGE")
-        {
-            std::cout << input << std::endl;
-            std::map<std::string, std::string> header = frame.getHeaders();
-            std::string channel = header["destination"];
-            std::string body = frame.getBody();
-            std::cout << body << std::endl;
-        }   
+    {
+        return false;
+    }
+    std::cout << input << std::endl;
+    Frame frame = Frame::fromString(input);
+    if(frame.getCommand() == "MESSAGE")
+    {
+        std::map<std::string, std::string> header = frame.getHeaders();
+        std::string channel = header["destination"];
+        std::string body = frame.getBody();
+        std::cout << body << std::endl;
+    }   
     return true;      
 }

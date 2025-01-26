@@ -24,13 +24,7 @@ int main(int argc, char *argv[])
         std::string input;
         if(keyboard.getNextInput(input))
         {
-            if(input == "logout")/// suppose to be logout? 
-            {
-                flag = false;
-                stompProtocol.logout(); 
-                std::cout << "main : logout" << std::endl; 
-            }
-            std::string stringFrame = Utilities::translate(input, subId++, receiptId++); 
+            std::string stringFrame = Utilities::translate(input, subId++, receiptId++);
             if(!stringFrame.empty())
             {
                 Frame frame = Frame::fromString(stringFrame);

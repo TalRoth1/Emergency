@@ -69,7 +69,11 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         }
         // If new user, add to map
         if(activeUsers.contains(login))
+        {
+            System.out.print("Reached here");
             connections.send(connectionId, createErrorFrame("User already logged in"));
+            return;
+        }
         else if (!users.containsKey(login))
             users.put(login, passcode);
         else
@@ -182,7 +186,6 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         shouldTerminate = true;
         // remove from active
         activeUsers.remove(connectionId);
-        connections.disconnect(connectionId);
 
         // Return RECEIPT if needed
         if (receipt != null) {
@@ -191,16 +194,12 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
             receiptFrame.addHeader("receipt-id", receipt);
             connections.send(connectionId, receiptFrame);
         }
+        connections.disconnect(connectionId);
     }
 
     // ------------------ Helper Methods ------------------
 
     private frame createErrorFrame(String message) {
-        //remove client first from active users
-        shouldTerminate = true;
-        activeUsers.remove(connectionId);
-        connections.disconnect(connectionId);
-
         frame error = new frame();
         error.setCommand("ERROR");
         error.addHeader("message", message);

@@ -178,7 +178,8 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
             result += "DISCONNECT\n";
             result += "receipt:" + std::to_string(receiptId) + "\n";
             result += "\n";
-            result += "\0";   
+            result += "\0";
+            return result;
         }
     }
     
