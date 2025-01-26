@@ -42,7 +42,6 @@ void Communication::process()
     while (isRunning.load())
     {
         Frame input = inputQueue->pop();
-        std::cout << "Communication created the frame :\n" << input.toString() << std::endl;    
         
         bool worked = stompProtocol->process(input);
         if(input.getCommand() == "CONNECT" && worked)

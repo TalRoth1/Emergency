@@ -24,8 +24,18 @@ int main(int argc, char *argv[])
         std::string input;
         if(keyboard.getNextInput(input))
         {
-            std::string stringFrame = Utilities::translate(input, subId++, receiptId++); 
-            if(!stringFrame.empty())
+            std::string stringFrame = Utilities::translate(input, subId++, receiptId++);
+            std::vector<std::string> arg = Utilities::splitString(input, ' ');
+            if(arg[0] == "report")
+            {
+                std::vector<std::string> eventFrames = Utilities::splitString(stringFrame, '\0');
+                for (std::string event : eventFrames)
+                {
+                    Frame frame = Frame::fromString(stringFrame);
+                    sendQueue.push(frame);    
+                }
+            }
+            else if(!stringFrame.empty())
             {
                 Frame frame = Frame::fromString(stringFrame);
                 sendQueue.push(frame);

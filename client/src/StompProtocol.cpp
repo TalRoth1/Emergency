@@ -22,6 +22,12 @@ bool StompProtocol::process(Frame &input)
 {
     if(input.getCommand() == "CONNECT")
     {
+        if(isLogin.load())
+        {
+            std::cout << "The client is already logged in, log out before trying again.";
+        }
+        else
+        {
         std::map<std::string, std::string> arg = input.getHeaders();
         std::string hostPort = arg["host"];
         std::string host = Utilities::splitString(hostPort, ':')[0];
@@ -37,6 +43,7 @@ bool StompProtocol::process(Frame &input)
         connectionHandler -> sendFrameAscii(correctFrame, '\0');
         isLogin.store(true);
         return true;
+        }
     }
     else if(input.getCommand() == "SUBSCRIBE")
     {
@@ -94,7 +101,7 @@ bool StompProtocol::process(Frame &input)
         isLogin.store(false); // Might be bad
         std::this_thread::sleep_for(std::chrono::seconds(2));
         connectionHandler->close();
-        return true;
+        logout();
     }
     else if(input.getCommand() == "SEND")
     {
@@ -115,7 +122,6 @@ bool StompProtocol::process(Frame &input)
         }
 
         handleSummary(input);
-        std::cout<< "Summary command recieved" << std::endl;// where is actually handlded?
     }
     else
     {
@@ -125,60 +131,78 @@ bool StompProtocol::process(Frame &input)
     
 void StompProtocol::logout()
 {
+    subscriptions.clear();
     isLogin.store(false);
      if (connectionHandler) {
         connectionHandler->close();
      }
-    subscriptions.clear();
 }
 void StompProtocol::handleSummary(const Frame &frame) {
     // Read channel, user, file from headers
     const auto &h = frame.getHeaders();
-    std::string channel = h.at("channel");
-    std::string user = h.at("user");
-    std::string file = h.at("file");
+    auto channelIt = h.find("channel");
+    auto userIt = h.find("user");
+    auto fileIt = h.find("file");
+
+    // Check if the required headers exist
+    if (channelIt == h.end() || userIt == h.end() || fileIt == h.end()) {
+        std::cerr << "Missing required header(s)!" << std::endl;
+        return;
+    }
+
+    std::string channel = channelIt->second;
+    std::string user = userIt->second;
+    std::string file = fileIt->second;
 
     auto key = std::make_pair(channel, user);
-    if (receivedEvents.find(key) == receivedEvents.end()) {
+    auto it = receivedEvents.find(key);
+    if (it == receivedEvents.end()) {
         std::cout << "No events for channel=" << channel << ", user=" << user << std::endl;
         return;
     }
- 
-    auto &vec = receivedEvents[key];
+
+    auto &vec = it->second;  // This is safe, since we found the key
     std::sort(vec.begin(), vec.end(), [](const Event &a, const Event &b)
     {
-    // date_time ascending
+        // date_time ascending
         if (a.get_date_time() == b.get_date_time())
         {
             return a.get_name() < b.get_name();
         }
         return a.get_date_time() < b.get_date_time();
     });
-    int total = (int)vec.size();
+
+    int total = static_cast<int>(vec.size());
     int activeCount = 0;
     int forcesCount = 0;
 
     for (auto &ev : vec)
     {
         // "active" is "true" or "false"
-        if (ev.get_general_information().at("active") == "true") {
+        auto activeIt = ev.get_general_information().find("active");
+        if (activeIt != ev.get_general_information().end() && activeIt->second == "true") {
             activeCount++;
         }
-        if (ev.get_general_information().at("forces_arrival_at_scene") == "true") {
+        
+        auto forcesIt = ev.get_general_information().find("forces_arrival_at_scene");
+        if (forcesIt != ev.get_general_information().end() && forcesIt->second == "true") {
             forcesCount++;
         }
     }
+
     std::ofstream outFile(file);
     if (!outFile.is_open()) {
         std::cerr << "Failed to open file " << file << std::endl;
         return;
     }
+
     outFile << "Channel " << channel << "\n"
             << "Stats:\n"
             << "Total: " << total << "\n"
             << "active: " << activeCount << "\n"
             << "forces arrival at scene: " << forcesCount << "\n\n";
     outFile << "Event Reports:\n";
+    
     int idx = 1;
     for (auto &ev : vec) {
         outFile << "Report_" << idx++ << ":\n";
@@ -194,10 +218,10 @@ void StompProtocol::handleSummary(const Frame &frame) {
             outFile << "  summary: " << desc << "\n";
         }
         outFile << "\n";
-        }
+    }
     outFile.close();
-    std::cout << "Summary written to " << file << std::endl;
 }
+
 
 std::string StompProtocol::epochToDate(int epoch) {
     time_t t = (time_t) epoch;
@@ -223,15 +247,27 @@ bool StompProtocol::receive()
     {
         return false;
     }
-    std::cout << input << std::endl;
     Frame frame = Frame::fromString(input);
+    if(frame.getCommand() == "CONNECTED")
+    {
+        std::cout << "Login succsessful" << std::endl;
+    }
+    if(frame.getCommand() == "ERROR")
+    {
+        std::cout << frame.getHeaders()["message"] << std::endl;
+    }
     if(frame.getCommand() == "MESSAGE")
     {
         std::map<std::string, std::string> header = frame.getHeaders();
         std::string channel = header["destination"];
+        channel = channel.substr(1);
         std::string body = frame.getBody();
-         std::cout << "Message recieved" << header["destination"] << std::endl;
-        std::cout << body << std::endl;
+        std::vector<std::string> lines = Utilities::splitString(body, '\n');
+        std::string user = Utilities::splitString(lines[0], ':')[1];
+        Event newEve = Event(body);
+        std::pair<std::string, std::string> chanuser(channel, user);
+        
+        receivedEvents[chanuser].push_back(newEve);
     }   
     return true;      
 }

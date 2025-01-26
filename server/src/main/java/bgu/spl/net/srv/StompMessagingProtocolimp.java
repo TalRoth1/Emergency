@@ -26,7 +26,7 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
     public void process(frame msg) {
         if (msg == null) {
             // Malformed frame or parse error
-            connections.send(connectionId, createErrorFrame("Malformed frame received"));
+            connections.send(connectionId, createErrorFrame("Malformed frame received", ""));
             return;
         }
 
@@ -48,7 +48,7 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
                 handleDisconnect(msg);
                 break;
             default:
-                connections.send(connectionId, createErrorFrame("Unknown command: " + command));
+                connections.send(connectionId, createErrorFrame("Unknown command: " + command, ""));
         }
     }
 
@@ -64,13 +64,13 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         String passcode = msg.getHeader("passcode");
 
         if (login == null || passcode == null) {
-            connections.send(connectionId, createErrorFrame("Missing login or passcode"));
+            connections.send(connectionId, createErrorFrame("Missing login or passcode", ""));
             return;
         }
         // If new user, add to map
         if(activeUsers.contains(login))
         {
-            connections.send(connectionId, createErrorFrame("User already logged in"));
+            connections.send(connectionId, createErrorFrame("User already logged in", ""));
             return;
         }
         else if (!users.containsKey(login))
@@ -80,7 +80,7 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
             // existing user, check password
             if (!users.get(login).equals(passcode))
             {
-                connections.send(connectionId, createErrorFrame("Wrong password"));
+                connections.send(connectionId, createErrorFrame("Wrong password", ""));
                 return;
             }
         }
@@ -101,9 +101,10 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
     {
         String destination = msg.getHeader("destination");
         String subId = msg.getHeader("id");
+        String receiptId = msg.getHeader("receipt");
         if (destination == null || subId == null)
         {
-            connections.send(connectionId, createErrorFrame("Missing 'destination' or 'id' in SUBSCRIBE"));
+            connections.send(connectionId, createErrorFrame("Missing 'destination' or 'id' in SUBSCRIBE", receiptId));
             return;
         }
 
@@ -111,7 +112,7 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         connections.subscribe(destination, connectionId, subId);
 
         // Return a RECEIPT frame
-        String receiptId = msg.getHeader("receipt");
+
         if (receiptId != null)
         {
             frame receipt = new frame();
@@ -124,21 +125,22 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
 
     private void handleUnsubscribe(frame msg) {
         String subId = msg.getHeader("id");
+        String receiptId = msg.getHeader("receipt");
         if (subId == null) 
         {
-            connections.send(connectionId, createErrorFrame("Missing 'id' in UNSUBSCRIBE"));
+            connections.send(connectionId, createErrorFrame("Missing 'id' in UNSUBSCRIBE", receiptId));
             return;
         }
 
         connections.unsubscribe(subId, connectionId);
 
-        String receiptId = msg.getHeader("receipt");
+
         if(receiptId != null)
         {
             // Return a RECEIPT frame
             frame receipt = new frame();
             receipt.setCommand("RECEIPT");
-            receipt.addHeader("receipt-id", subId);
+            receipt.addHeader("receipt-id", receiptId);
             receipt.setBody("");
             connections.send(connectionId, receipt);
         }
@@ -148,7 +150,7 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         String destination = msg.getHeader("destination");
         if (destination == null) 
         {
-            connections.send(connectionId, createErrorFrame("Missing 'destination' in SEND"));
+            connections.send(connectionId, createErrorFrame("Missing 'destination' in SEND", ""));
             return;
         }
 
@@ -168,7 +170,7 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         messageToBroadcast.setBody(msg.getBody());
 
         // Now broadcast
-        ((StompConnections<frame>) connections).broadcast(destination, messageToBroadcast);
+        ((StompConnections<frame>) connections).broadcast(destination.substring(1), messageToBroadcast);
 
         // If there's a receipt
         String receipt = msg.getHeader("receipt");
@@ -197,9 +199,10 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
 
     // ------------------ Helper Methods ------------------
 
-    private frame createErrorFrame(String message) {
+    private frame createErrorFrame(String message, String receipt) {
         frame error = new frame();
         error.setCommand("ERROR");
+        error.addHeader("receiptId", receipt);
         error.addHeader("message", message);
         error.setBody("The server has caught an error:\n" + message);
         return error;

@@ -100,7 +100,7 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
             result+= "  active: " + ev.get_general_information().at("active") + "\n";
             result+= "  forces_arrival_at_scene: " + ev.get_general_information().at("forces_arrival_at_scene") + "\n";
             result+= "description:\n";
-            result+= ev.get_description() + "\0\n";
+            result+= ev.get_description() + '\n' + '\0';
             }
             return result;
         }       
@@ -121,7 +121,7 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
             subIdToChannel[nextSubId] = channel;
             nextSubId++;
         } 
-            int localSubId = channelToSubId[(arg[1])];
+            subId = channelToSubId[(arg[1])];
             result += "SUBSCRIBE\n";
             result += "destination:" + arg[1] + "\n";
             result += "id:" + std::to_string(subId) + "\n";
@@ -143,9 +143,9 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
             std::cerr << "Error: Not subscribed to channel '" << channel << "'." << std::endl;
             return ""; // no frame
         }
-        int localSubId = channelToSubId[channel];
+        subId = channelToSubId[channel];
         channelToSubId.erase(channel);
-        subIdToChannel.erase(localSubId);
+        subIdToChannel.erase(subId);
         int receipt = nextReceiptId++;
 
 

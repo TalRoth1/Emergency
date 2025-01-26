@@ -53,8 +53,6 @@ public class Reactor<T> implements Server<T>
                 runSelectionThreadTasks();
 
                 for (SelectionKey key : selector.selectedKeys()) {
-
-                    System.out.println("handling key: " + key.readyOps());
                     if (!key.isValid()) {
                         continue;
                     } else if (key.isAcceptable()) {
