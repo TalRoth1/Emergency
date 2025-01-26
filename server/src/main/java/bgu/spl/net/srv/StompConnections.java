@@ -37,6 +37,7 @@ public class StompConnections<T> implements Connections<T> {
         for (Integer connId : topicSubscribers.getOrDefault(channel, new CopyOnWriteArraySet<>()))
         {
             send(connId, msg);
+            System.out.println("Sent message to " + connId);
         }
     }
     @Override
@@ -47,6 +48,7 @@ public class StompConnections<T> implements Connections<T> {
             subs.remove(connectionId);
         }
         subscriptions.remove(connectionId);
+        System.out.println("Disconnected " + connectionId); 
     }
 
     public void addClient(int connectionId, ConnectionHandler<T> handler)
@@ -58,6 +60,7 @@ public class StompConnections<T> implements Connections<T> {
     {
         topicSubscribers.computeIfAbsent(channel, k -> new CopyOnWriteArraySet<>()).add(connectionId);
         subscriptions.computeIfAbsent(connectionId, k -> new ConcurrentHashMap<>()).put(subId, channel);
+        System.out.println("Subscribed " + connectionId + " to " + channel);        
     }
 
     public void unsubscribe(String subId, int connectionId)
@@ -68,6 +71,7 @@ public class StompConnections<T> implements Connections<T> {
         {
             topicSubscribers.getOrDefault(channel, new CopyOnWriteArraySet<>()).remove(connectionId);
         }
+        System.out.println("Unsubscribed " + connectionId + " from " + channel);
     }
     public void broadcast(String channel, T message)
     {
