@@ -55,7 +55,7 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
         }
         else
         {
-            std::string currentUser = arg[2];  
+            Utilities::currentUser = arg[2];  
             int receipt = nextReceiptId++;
             result += "CONNECT\n";
             result += "accept-version:1.2\n";
@@ -89,28 +89,21 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
         }
 
         std::vector<Event> events = Utilities::parseIntoEvents(jsonString);
-        result += "SEND\n";
-        for (const Event &event : events) {
-            
-            std::string userName = currentUser; 
-            result += "destination:" + event.get_channel_name() + "\n";
-            result += "\n"; 
-            result += "user:" + userName + "\n"; 
-            result += "city" + event.get_city() + "\n";  
-            result += "event_name" + event.get_name() + "\n"; 
-            result += "date_time" + std::to_string(event.get_date_time()) + "\n";        
-            result += "general_information:";
-            for (const auto& info : event.get_general_information()) {
-                result += info.first + "=" + info.second + ";";
-            }
-            result += "\n";
-            result += "description" + event.get_description() + "\n";
-            result += "\n";
-            result += "\0";
+            for (auto &ev : events) {
+            result+= "SEND\n";
+            result+= "destination:/" + ev.get_channel_name() + "\n\n";
+            result+= "user:" + currentUser + "\n";
+            result+= "city:" + ev.get_city() + "\n";
+            result+= "event name:" + ev.get_name() + "\n";
+            result+= "date time:" + std::to_string(ev.get_date_time()) + "\n";
+            result+= "general information:\n";
+            result+= "  active: " + ev.get_general_information().at("active") + "\n";
+            result+= "  forces_arrival_at_scene: " + ev.get_general_information().at("forces_arrival_at_scene") + "\n";
+            result+= "description:\n";
+            result+= ev.get_description() + "\0\n";
             }
             return result;
-        }
-                
+        }       
     }
     else if(command == "join")
     {
@@ -128,9 +121,7 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
             subIdToChannel[nextSubId] = channel;
             nextSubId++;
         } 
-            int subId = channelToSubId[(arg[1])];
-            int receipt = nextReceiptId++;
-
+            int localSubId = channelToSubId[(arg[1])];
             result += "SUBSCRIBE\n";
             result += "destination:" + arg[1] + "\n";
             result += "id:" + std::to_string(subId) + "\n";
@@ -152,9 +143,9 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
             std::cerr << "Error: Not subscribed to channel '" << channel << "'." << std::endl;
             return ""; // no frame
         }
-        int subId = channelToSubId[channel];
+        int localSubId = channelToSubId[channel];
         channelToSubId.erase(channel);
-        subIdToChannel.erase(subId);
+        subIdToChannel.erase(localSubId);
         int receipt = nextReceiptId++;
 
 

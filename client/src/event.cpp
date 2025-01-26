@@ -9,7 +9,7 @@
 #include <sstream>
 #include <cstring>
 
-#include "../include/keyboardInput.h"
+#include "../include/keyBoardInput.h"
 
 using namespace std;
 using json = nlohmann::json;

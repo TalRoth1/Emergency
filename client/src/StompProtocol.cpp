@@ -142,30 +142,58 @@ void StompProtocol::handleSummary(const Frame &frame) {
     }
  
     auto &vec = receivedEvents[key];
-    //need to ass sorting!!!!!!!!!!!!!!!!!!!!!
+    std::sort(vec.begin(), vec.end(), [](const Event &a, const Event &b)
+    {
+    // date_time ascending
+        if (a.get_date_time() == b.get_date_time())
+        {
+            return a.get_name() < b.get_name();
+        }
+        return a.get_date_time() < b.get_date_time();
+    });
+    int total = (int)vec.size();
+    int activeCount = 0;
+    int forcesCount = 0;
+
+    for (auto &ev : vec)
+    {
+        // "active" is "true" or "false"
+        if (ev.get_general_information().at("active") == "true") {
+            activeCount++;
+        }
+        if (ev.get_general_information().at("forces_arrival_at_scene") == "true") {
+            forcesCount++;
+        }
+    }
     std::ofstream outFile(file);
     if (!outFile.is_open()) {
         std::cerr << "Failed to open file " << file << std::endl;
         return;
     }
-
-    outFile << "Channel: " << channel << "\n"
-            << "User: " << user << "\n"
-            << "Total events: " << vec.size() << "\n\n";
-
+    outFile << "Channel " << channel << "\n"
+            << "Stats:\n"
+            << "Total: " << total << "\n"
+            << "active: " << activeCount << "\n"
+            << "forces arrival at scene: " << forcesCount << "\n\n";
+    outFile << "Event Reports:\n";
     int idx = 1;
     for (auto &ev : vec) {
-        outFile << "Event #" << idx++ << ":\n";
+        outFile << "Report_" << idx++ << ":\n";
         outFile << "  city: " << ev.get_city() << "\n";
-        outFile << "  event name: " << ev.get_name() << "\n";
         outFile << "  date time: " << epochToDate(ev.get_date_time()) << "\n";
-        outFile << "  general information:\n";
-        for (auto &info : ev.get_general_information()) {
-            outFile << "    " << info.first << ": " << info.second << "\n";
+        outFile << "  event name: " << ev.get_name() << "\n";
+        std::string desc = ev.get_description();
+        if (desc.size() > 30)
+        {
+            std::string partial = desc.substr(0, 27) + "...";
+            outFile << "  summary: " << partial << "\n";
+        } else {
+            outFile << "  summary: " << desc << "\n";
         }
-        outFile << "  description:\n" << ev.get_description() << "\n";
-    }
+        outFile << "\n";
+        }
     outFile.close();
+    std::cout << "Summary written to " << file << std::endl;
 }
 
 std::string StompProtocol::epochToDate(int epoch) {
@@ -199,6 +227,7 @@ bool StompProtocol::receive()
         std::map<std::string, std::string> header = frame.getHeaders();
         std::string channel = header["destination"];
         std::string body = frame.getBody();
+         std::cout << "Message recieved" << header["destination"] << std::endl;
         std::cout << body << std::endl;
     }   
     return true;      
