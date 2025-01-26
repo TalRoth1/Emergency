@@ -91,6 +91,9 @@ bool StompProtocol::process(Frame &input)
             return false;
         }
         connectionHandler->sendFrameAscii(input.toString(), '\0');
+        isLogin.store(false); // Might be bad
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        connectionHandler->close();
         return true;
     }
     else if(input.getCommand() == "SEND")

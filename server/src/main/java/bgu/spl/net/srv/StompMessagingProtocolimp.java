@@ -190,7 +190,6 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
             receiptFrame.addHeader("receipt-id", receipt);
             connections.send(connectionId, receiptFrame);
         }
-        shouldTerminate = true;
         // remove from active
         activeUsers.remove(connectionId);
         connections.disconnect(connectionId);
