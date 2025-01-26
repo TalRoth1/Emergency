@@ -18,6 +18,7 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
     private final Queue<ByteBuffer> writeQueue = new ConcurrentLinkedQueue<>();
     private final SocketChannel chan;
     private final Reactor<T> reactor;
+    
 
     public NonBlockingConnectionHandler(MessageEncoderDecoder<T> reader, MessagingProtocol<T> protocol, SocketChannel chan, Reactor<T> reactor) 
     {
@@ -28,7 +29,7 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
     }
 
     public Runnable continueRead() 
-    {
+    {   
         ByteBuffer buf = leaseBuffer();
 
         boolean success = false;
@@ -84,8 +85,7 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
 
     public void continueWrite()
     {
-        while (!writeQueue.isEmpty())
-        {
+        while (!writeQueue.isEmpty()) {
             try {
                 ByteBuffer top = writeQueue.peek();
                 chan.write(top);
@@ -102,11 +102,11 @@ public class NonBlockingConnectionHandler<T> implements ConnectionHandler<T> {
                 close();
             }
         }
-
-        if (writeQueue.isEmpty())
+        if (!protocol.shouldTerminate())
         {
-            if (protocol.shouldTerminate()) close();
-            else reactor.updateInterestedOps(chan, SelectionKey.OP_READ);
+            close();
+    } else {
+        reactor.updateInterestedOps(chan, SelectionKey.OP_READ);
         }
     }
 

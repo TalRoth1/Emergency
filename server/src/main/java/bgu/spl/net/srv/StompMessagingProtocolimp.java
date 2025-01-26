@@ -180,7 +180,6 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
     private void handleDisconnect(frame msg) {
         String receipt = msg.getHeader("receipt");
         shouldTerminate = true;
-
         // remove from active
         activeUsers.remove(connectionId);
         connections.disconnect(connectionId);
@@ -197,6 +196,11 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
     // ------------------ Helper Methods ------------------
 
     private frame createErrorFrame(String message) {
+        //remove client first from active users
+        shouldTerminate = true;
+        activeUsers.remove(connectionId);
+        connections.disconnect(connectionId);
+
         frame error = new frame();
         error.setCommand("ERROR");
         error.addHeader("message", message);

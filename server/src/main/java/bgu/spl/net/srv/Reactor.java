@@ -69,7 +69,8 @@ public class Reactor<T> implements Server<T>
             }
 
         } catch (ClosedSelectorException ex) {
-            //do nothing - server was requested to be closed
+            
+            
         } catch (IOException ex) {
             //this is an error
             ex.printStackTrace();
