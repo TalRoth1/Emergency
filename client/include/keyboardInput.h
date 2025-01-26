@@ -1,30 +1,17 @@
-#pragma once
+#ifndef KEYBOARDINPUT_H
+#define KEYBOARDINPUT_H
 
-#include <thread>
-#include <atomic>
-#include <string>
-#include <queue>
-#include <mutex>
-#include <condition_variable>
+#include "StompClient.h"
 
-class keyboardInput
-{
-private:
-    void listen();
-
-    std::thread listenerThread;
-    std::atomic<bool> isRunning;  
-    std::queue<std::string> inputQueue;
-    std::mutex queueMutex;
-    std::condition_variable inputAvailable;
-
+class KeyboardInput {
 public:
-    keyboardInput();
-    ~keyboardInput();
+    KeyboardInput(StompClient &client);
+    void start(); // Start reading input from user
+    void stop();  // Stop reading input from user
 
-    void start();
-
-    void stop();
-
-    bool getNextInput(std::string& input);
+private:
+    StompClient &client;
+    bool running; // State of the input reader
 };
+
+#endif

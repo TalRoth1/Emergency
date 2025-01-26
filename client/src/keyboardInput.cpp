@@ -1,54 +1,17 @@
-#include "../include/keyboardInput.h"
+#ifndef KEYBOARDINPUT_H
+#define KEYBOARDINPUT_H
 
-#include <iostream>
+#include "../include/StompClient.h"
 
-keyboardInput::keyboardInput() : isRunning(false)
-{}
+class KeyboardInput {
+public:
+    KeyboardInput(StompClient &client);
+    void start(); // Start reading input from user
+    void stop();  // Stop reading input from user
 
-keyboardInput::~keyboardInput()
-{
-    stop();
-}
+private:
+    StompClient &client;
+    bool running; // State of the input reader
+};
 
-void keyboardInput::start()
-{
-    if (isRunning) {
-        return;
-    }
-    isRunning = true;
-    listenerThread = std::thread(&keyboardInput::listen, this);
-}
-
-void keyboardInput::stop()
-{
-    if (isRunning) {
-        isRunning = false;
-        if (listenerThread.joinable()) {
-            listenerThread.join();
-        }
-    }
-}
-
-bool keyboardInput::getNextInput(std::string& input)
-{
-    std::lock_guard<std::mutex> lock(queueMutex);
-    if (!inputQueue.empty()) {
-        input = inputQueue.front();
-        inputQueue.pop();
-        return true;
-    }
-    return false;
-}
-
-void keyboardInput::listen()
-{
-    while (isRunning) {
-        std::string input;
-        std::getline(std::cin, input);
-        {
-            std::lock_guard<std::mutex> lock(queueMutex);
-            inputQueue.push(input);
-        }
-        inputAvailable.notify_one();
-    }
-}
+#endif
