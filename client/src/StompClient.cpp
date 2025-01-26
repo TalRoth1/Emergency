@@ -27,6 +27,8 @@ int main(int argc, char *argv[])
             if(input == "logout")/// suppose to be logout? 
             {
                 flag = false;
+                stompProtocol.logout(); 
+                std::cout << "main : logout" << std::endl; 
             }
             std::string stringFrame = Utilities::translate(input, subId++, receiptId++);
             Frame frame = Frame::fromString(stringFrame);

@@ -14,6 +14,7 @@ private:
     ConnectionHandler *connectionHandler;
     std::map<std::string, std::string> subscriptions;
     std::map<std::string, std::map <std::string, std::vector<Event>>> reports; // <Channel, <Username, Report>>
+    std::map<std::pair<std::string, std::string>, std::vector<Event>> receivedEvents;
     
 public:
     StompProtocol();

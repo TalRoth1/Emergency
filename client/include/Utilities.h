@@ -15,7 +15,8 @@ class Utilities
         static std::map<std::string,int> channelToSubId;
         static std::map<int,std::string> subIdToChannel;
         static int nextSubId;
-        static int nextReceiptId;   
+        static int nextReceiptId;
+        static std::string currentUser;   
 
 
 };

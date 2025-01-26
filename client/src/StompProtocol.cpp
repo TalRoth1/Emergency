@@ -1,7 +1,9 @@
 #include "../include/StompProtocol.h"
 #include "../include/Utilities.h"
+#include "../include/event.h" // Add this line to include the definition of ReceivedEvent
 
 #include <iostream>
+#include <fstream>
 
 
 StompProtocol::StompProtocol():isLogin(false)
@@ -85,7 +87,7 @@ bool StompProtocol::process(Frame &input)
         }
         isLogin.store(false);
         connectionHandler->close();
-        std::cout << "disconnect command" << std::endl; 
+        std::cout << "protocol: disconnect command" << std::endl; 
         return true;
     }
     else if(input.getCommand() == "SEND")
@@ -107,6 +109,9 @@ bool StompProtocol::process(Frame &input)
             return false;
         }
         std::cout<< "Summary command recieved" << std::endl;// where is actually handlded?
+        
+        int activeCount = 0;
+        int forcesCount = 0;
         return true;
     }
     else
@@ -114,6 +119,7 @@ bool StompProtocol::process(Frame &input)
         return false;
     }
 }
+    
 void StompProtocol::logout()
 {
     isLogin.store(false);
@@ -121,8 +127,18 @@ void StompProtocol::logout()
         connectionHandler->close();
      }
     subscriptions.clear();
+    std::cout << "protocol: logout" << std::endl;
 }
-
+std::string epochToDate(long long epoch) {
+    // Convert epoch to time_t
+    time_t t = (time_t) epoch;
+    // localtime or gmtime
+    struct tm *lt = localtime(&t);
+    char buf[64];
+    // Format "DD/MM/YY HH:MM" or however you want
+    strftime(buf, sizeof(buf), "%d/%m/%y %H:%M", lt);
+    return std::string(buf);
+}
 bool StompProtocol::receive()
 {
     if(!isLogin.load())

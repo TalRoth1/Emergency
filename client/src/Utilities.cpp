@@ -11,6 +11,7 @@ std::map<int,std::string> Utilities::subIdToChannel;
 
 int Utilities::nextSubId = 1;
 int Utilities::nextReceiptId = 1;
+std::string Utilities::currentUser = "";
 
 std::vector<std::string> Utilities::splitString(const std::string& str, char delimiter)
 {
@@ -54,6 +55,7 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
         }
         else
         {
+             std::string currentUser = arg[2];  
             int receipt = nextReceiptId++;
             frame += "CONNECT\n";
             frame += "accept-version:1.2\n";
@@ -73,12 +75,42 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
         }
         else
         {
-            int receipt = nextReceiptId++;
-            std::string data = Utilities::readJsonFileAsString(arg[1]);
-            frame += "SEND\n";
-            std::cout << "sending report frame" << frame << std::endl;  
+        std::string jsonPath = arg[1];
+        std::string jsonString;
+        try 
+        {
+            jsonString = Utilities::readJsonFileAsString(jsonPath);
+        } 
+        catch(const std::exception &e) 
+        {
+            std::cerr << "Failed to read file: " << e.what() << std::endl;
+            return "";
         }
 
+        std::vector<Event> events = Utilities::parseIntoEvents(jsonString);
+        frame += "SEND\n";
+        for (const Event &event : events) {
+            
+            std::string userName =currentUser; 
+            frame += "destination:" + event.get_channel_name() + "\n";
+            frame += "\n"; 
+            frame += "user:" + userName + "\n"; 
+            frame += "city" + event.get_city() + "\n";  
+            frame += "event_name" + event.get_name() + "\n"; 
+            frame += "date_time" + std::to_string(event.get_date_time()) + "\n";        
+            frame += "general_information:";
+            for (const auto& info : event.get_general_information()) {
+                frame += info.first + "=" + info.second + ";";
+            }
+            frame += "\n";
+            frame += "description" + event.get_description() + "\n";
+            frame += "\n";
+            frame += "\0";
+            std::cout << "sending report frame" << frame << std::endl;    
+            receiptId++;    
+            }
+        }
+                
     }
     else if(command == "join")
     {
@@ -150,6 +182,18 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
             frame += "\0";
             std::cout << "sending logout frame" << frame << std::endl;      
         }
+    }
+    else if (command == "summary") {
+    if (arg.size() != 4) {
+        std::cerr << "summary requires {channel} {user} {file}\n";
+        return "";
+    }
+    std::ostringstream out;
+    out << "SUMMARY\n"
+        << "channel:" << arg[1] << "\n"
+        << "user:" << arg[2] << "\n"
+        << "file:" << arg[3] << "\n\n\0";
+    return out.str();
     }
     else
     {
