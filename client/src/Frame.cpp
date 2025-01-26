@@ -18,7 +18,7 @@ std::string Frame::getCommand()
     return this->command;
 }
 
-std::map<std::string, std::string> Frame::getHeaders()
+std::map<std::string, std::string> Frame::getHeaders() const // changes to const
 {
     return this->headers;
 }

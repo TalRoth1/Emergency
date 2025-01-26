@@ -183,22 +183,28 @@ std::string Utilities::translate(std::string &input, int subId, int receiptId)
             std::cout << "sending logout frame" << frame << std::endl;      
         }
     }
+    
     else if (command == "summary") {
-    if (arg.size() != 4) {
-        std::cerr << "summary requires {channel} {user} {file}\n";
-        return "";
+        if (arg.size() != 4) {
+            std::cerr << "summary requires {channel} {user} {file}\n";
+            return "";
+        }
+        else
+        {
+            frame+= "SUMMARY\n";    
+            frame+= "channel:" + arg[1] + "\n";
+            frame+= "user:" + arg[2] + "\n";
+            frame+= "file:" + arg[3] + "\n";
+            frame+= "\n";
+            frame+= "\0";
+            std::cout << "utilities: sending summary frame" << frame << std::endl;
+        }
     }
-    std::ostringstream out;
-    out << "SUMMARY\n"
-        << "channel:" << arg[1] << "\n"
-        << "user:" << arg[2] << "\n"
-        << "file:" << arg[3] << "\n\n\0";
-    return out.str();
-    }
+
     else
-    {
-        std::cout << "Unkown Command" << std::endl;
-    }
+        {
+            std::cout << "Unkown Command" << std::endl;
+        }
 
     return frame;
 }

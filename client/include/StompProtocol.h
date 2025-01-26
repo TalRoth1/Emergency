@@ -23,4 +23,6 @@ public:
     bool process(Frame &input);
     bool receive();//change to bool
     void logout();
+    static std::string epochToDate(int epoch);
+    void handleSummary(const Frame &frame); 
 };

@@ -4,9 +4,12 @@
 
 #include <iostream>
 #include <fstream>
-
-
-StompProtocol::StompProtocol():isLogin(false)
+// In StompProtocol.cpp
+StompProtocol::StompProtocol()
+ : isLogin(false)
+ , connectionHandler(nullptr)
+ , subscriptions()
+ , receivedEvents() // etc.
 {
 }
 
@@ -108,11 +111,10 @@ bool StompProtocol::process(Frame &input)
             std::cout << "you need to login first" << std::endl;
             return false;
         }
+
+        handleSummary(input);
         std::cout<< "Summary command recieved" << std::endl;// where is actually handlded?
         
-        int activeCount = 0;
-        int forcesCount = 0;
-        return true;
     }
     else
     {
@@ -129,13 +131,54 @@ void StompProtocol::logout()
     subscriptions.clear();
     std::cout << "protocol: logout" << std::endl;
 }
-std::string epochToDate(long long epoch) {
-    // Convert epoch to time_t
+void StompProtocol::handleSummary(const Frame &frame) {
+    // Read channel, user, file from headers
+    const auto &h = frame.getHeaders();
+    std::string channel = h.at("channel");
+    std::string user    = h.at("user");
+    std::string file    = h.at("file");
+
+    std::cout << "StompProtocol::handleSummary => channel=" << channel
+              << ", user=" << user << ", file=" << file << std::endl;
+
+    auto key = std::make_pair(channel, user);
+    if (receivedEvents.find(key) == receivedEvents.end()) {
+        std::cout << "No events for channel=" << channel << ", user=" << user << std::endl;
+        return;
+    }
+
+    auto &vec = receivedEvents[key];
+    //need to ass sorting!!!!!!!!!!!!!!!!!!!!!
+    std::ofstream outFile(file);
+    if (!outFile.is_open()) {
+        std::cerr << "Failed to open file " << file << std::endl;
+        return;
+    }
+
+    outFile << "Channel: " << channel << "\n"
+            << "User: " << user << "\n"
+            << "Total events: " << vec.size() << "\n\n";
+
+    int idx = 1;
+    for (auto &ev : vec) {
+        outFile << "Event #" << idx++ << ":\n";
+        outFile << "  city: " << ev.get_city() << "\n";
+        outFile << "  event name: " << ev.get_name() << "\n";
+        outFile << "  date time: " << epochToDate(ev.get_date_time()) << "\n";
+        outFile << "  general information:\n";
+        for (auto &info : ev.get_general_information()) {
+            outFile << "    " << info.first << ": " << info.second << "\n";
+        }
+        outFile << "  description:\n" << ev.get_description() << "\n";
+    }
+    outFile.close();
+    std::cout << "Summary has been written to " << file << std::endl;
+}
+
+std::string StompProtocol::epochToDate(int epoch) {
     time_t t = (time_t) epoch;
-    // localtime or gmtime
     struct tm *lt = localtime(&t);
     char buf[64];
-    // Format "DD/MM/YY HH:MM" or however you want
     strftime(buf, sizeof(buf), "%d/%m/%y %H:%M", lt);
     return std::string(buf);
 }
