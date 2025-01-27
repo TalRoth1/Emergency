@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
                 for (std::string event : eventFrames)
                 {
                     Frame frame = Frame::fromString(stringFrame);
-                    sendQueue.push(frame);    
+                    sendQueue.push(frame);
                 }
             }
             else if(!stringFrame.empty())

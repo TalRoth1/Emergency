@@ -18,10 +18,14 @@ private:
     void process();
     void receive();
 
+
 public:
     Communication(StompProtocol *stompProtocol, ThreadSafeQueue *inputQueue);
     ~Communication();
 
+    void updateReceive();
+
+    
     void start();
     void stop();
 };

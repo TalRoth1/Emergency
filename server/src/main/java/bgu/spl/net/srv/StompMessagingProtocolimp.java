@@ -95,6 +95,7 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         connected.setBody(""); // no body
         if(connections!= null)
             connections.send(connectionId, connected);
+        System.out.println(connectionId);
     }
 
     private void handleSubscribe(frame msg) 

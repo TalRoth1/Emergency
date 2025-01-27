@@ -24,25 +24,26 @@ bool StompProtocol::process(Frame &input)
     {
         if(isLogin.load())
         {
-            std::cout << "The client is already logged in, log out before trying again.";
+            std::cout << "The client is already logged in, log out before trying again." << std::endl;
+            return true;
         }
         else
         {
-        std::map<std::string, std::string> arg = input.getHeaders();
-        std::string hostPort = arg["host"];
-        std::string host = Utilities::splitString(hostPort, ':')[0];
-        std::string port = Utilities::splitString(hostPort, ':')[1];
-        this -> connectionHandler = new ConnectionHandler(host, std::stoi(port));
-       
-        std::string correctFrame = "CONNECT\naccept-version:1.2\nhost:stomp.cs.bgu.ac.il\nlogin:" + arg["login"] +"\npasscode:" + arg["passcode"] + "\n\n\0";
+            std::map<std::string, std::string> arg = input.getHeaders();
+            std::string hostPort = arg["host"];
+            std::string host = Utilities::splitString(hostPort, ':')[0];
+            std::string port = Utilities::splitString(hostPort, ':')[1];
+            this -> connectionHandler = new ConnectionHandler(host, std::stoi(port));
         
-        if (!connectionHandler->connect()) {
-            std::cerr << "Failed to connect to server." << std::endl;
-            return false;
-        }
-        connectionHandler -> sendFrameAscii(correctFrame, '\0');
-        isLogin.store(true);
-        return true;
+            std::string correctFrame = "CONNECT\naccept-version:1.2\nhost:stomp.cs.bgu.ac.il\nlogin:" + arg["login"] +"\npasscode:" + arg["passcode"] + "\n\n\0";
+            
+            if (!connectionHandler->connect()) {
+                std::cerr << "Failed to connect to server." << std::endl;
+                return false;
+            }
+            connectionHandler -> sendFrameAscii(correctFrame, '\0');
+            isLogin.store(true);
+            return true;
         }
     }
     else if(input.getCommand() == "SUBSCRIBE")
@@ -50,7 +51,7 @@ bool StompProtocol::process(Frame &input)
         if(!isLogin.load())
         {
             std::cout << "you need to login first" << std::endl;
-            return false;
+            return true;
         }
         std::map<std::string, std::string> arg = input.getHeaders();
         std::string channel = arg["destination"];
@@ -72,7 +73,7 @@ bool StompProtocol::process(Frame &input)
         if(!isLogin.load())
         {
             std::cout << "you need to login first" << std::endl;
-            return false;
+            return true;
         }
         else{
         std::map<std::string, std::string> arg = input.getHeaders();
@@ -95,12 +96,10 @@ bool StompProtocol::process(Frame &input)
         if(!isLogin.load())
         {
             std::cout << "you need to login first" << std::endl;
-            return false;
+            return true;
         }
         connectionHandler->sendFrameAscii(input.toString(), '\0');
-        isLogin.store(false); // Might be bad
         std::this_thread::sleep_for(std::chrono::seconds(2));
-        connectionHandler->close();
         logout();
     }
     else if(input.getCommand() == "SEND")
@@ -108,7 +107,7 @@ bool StompProtocol::process(Frame &input)
         if(!isLogin.load())
         {
             std::cout << "you need to login first" << std::endl;
-            return false;
+            return true;
         }
         connectionHandler->sendFrameAscii(input.toString(), '\0'); 
         return true;
@@ -118,25 +117,29 @@ bool StompProtocol::process(Frame &input)
         if(!isLogin.load())
         {
             std::cout << "you need to login first" << std::endl;
-            return false;
+            return true;
         }
 
         handleSummary(input);
     }
     else
     {
-        return false;
+        return true;
     }
 }
-    
-void StompProtocol::logout()
-{
-    subscriptions.clear();
-    isLogin.store(false);
-     if (connectionHandler) {
-        connectionHandler->close();
-     }
+
+void StompProtocol::logout() {
+    if (connectionHandler != nullptr) {
+        connectionHandler->close();  // Close the connection
+        delete connectionHandler;    // Free memory
+        connectionHandler = nullptr; // Nullify the pointer
+    }
+
+    subscriptions.clear();          // Clear any subscriptions
+    isLogin.store(false);           // Set login state to false
 }
+
+
 void StompProtocol::handleSummary(const Frame &frame) {
     // Read channel, user, file from headers
     const auto &h = frame.getHeaders();
@@ -234,7 +237,7 @@ bool StompProtocol::receive()
 {
     if(!isLogin.load())
     {
-        return true;
+        return false;
     }
      if (connectionHandler == nullptr) {
         // If there's no connectionHandler, can't read.
@@ -252,11 +255,12 @@ bool StompProtocol::receive()
     {
         std::cout << "Login succsessful" << std::endl;
     }
-    if(frame.getCommand() == "ERROR")
+    else if(frame.getCommand() == "ERROR")
     {
         std::cout << frame.getHeaders()["message"] << std::endl;
+        logout();
     }
-    if(frame.getCommand() == "MESSAGE")
+    else if(frame.getCommand() == "MESSAGE")
     {
         std::map<std::string, std::string> header = frame.getHeaders();
         std::string channel = header["destination"];
@@ -268,6 +272,10 @@ bool StompProtocol::receive()
         std::pair<std::string, std::string> chanuser(channel, user);
         
         receivedEvents[chanuser].push_back(newEve);
-    }   
+    }
+    else if(frame.getCommand() == "RECEIPT")
+    {
+        std::cout << frame.toString() << std::endl;
+    }
     return true;      
 }
