@@ -34,8 +34,6 @@ void Communication::stop()
 }
 void Communication::updateReceive()
 {
-    if(getThread.joinable())
-        getThread.join();
     getThread = std::thread(&Communication::receive, this);
 }
 
@@ -43,6 +41,7 @@ void Communication::process()
 {
     while (isRunning.load())
     {
+        std::this_thread::sleep_for(std::chrono::seconds(2));
         Frame input = inputQueue->pop();
         bool worked = stompProtocol->process(input);
     }
@@ -52,6 +51,7 @@ void Communication::receive()
 {
     while (isRunning.load())
     {
+        std::this_thread::sleep_for(std::chrono::seconds(2));
         bool success = stompProtocol->receive();
     }
 }

@@ -45,6 +45,7 @@ bool StompProtocol::process(Frame &input)
             isLogin.store(true);
             return true;
         }
+        
     }
     else if(input.getCommand() == "SUBSCRIBE")
     {
@@ -99,8 +100,9 @@ bool StompProtocol::process(Frame &input)
             return true;
         }
         connectionHandler->sendFrameAscii(input.toString(), '\0');
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         logout();
+        return true; 
     }
     else if(input.getCommand() == "SEND")
     {
@@ -272,10 +274,6 @@ bool StompProtocol::receive()
         std::pair<std::string, std::string> chanuser(channel, user);
         
         receivedEvents[chanuser].push_back(newEve);
-    }
-    else if(frame.getCommand() == "RECEIPT")
-    {
-        std::cout << frame.toString() << std::endl;
     }
     return true;      
 }

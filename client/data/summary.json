@@ -1,6 +1,6 @@
 Channel police
 Stats:
-Total: 8
+Total: 7
 active: 0
 forces arrival at scene: 0
 
@@ -42,12 +42,6 @@ Report_6:
   summary: Pink Lampadati Felon with l...
 
 Report_7:
-  city: Liberty City
-  date time: 23/12/24 13:40
-  event name: Grand Theft Auto
-  summary: Pink Lampadati Felon with l...
-
-Report_8:
   city: Liberty City
   date time: 23/12/24 13:40
   event name: Grand Theft Auto

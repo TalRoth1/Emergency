@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
                 std::vector<std::string> eventFrames = Utilities::splitString(stringFrame, '\0');
                 for (std::string event : eventFrames)
                 {
-                    Frame frame = Frame::fromString(stringFrame);
+                    Frame frame = Frame::fromString(event);
                     sendQueue.push(frame);
                 }
             }

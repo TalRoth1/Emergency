@@ -27,6 +27,7 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         if (msg == null) {
             // Malformed frame or parse error
             connections.send(connectionId, createErrorFrame("Malformed frame received", ""));
+            activeUsers.remove(connectionId);
             return;
         }
 
@@ -48,7 +49,10 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
                 handleDisconnect(msg);
                 break;
             default:
+            {
                 connections.send(connectionId, createErrorFrame("Unknown command: " + command, ""));
+                activeUsers.remove(connectionId);
+            }
         }
     }
 
@@ -65,12 +69,14 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
 
         if (login == null || passcode == null) {
             connections.send(connectionId, createErrorFrame("Missing login or passcode", ""));
+            activeUsers.remove(connectionId);
             return;
         }
         // If new user, add to map
         if(activeUsers.contains(login))
         {
             connections.send(connectionId, createErrorFrame("User already logged in", ""));
+            activeUsers.remove(connectionId);
             return;
         }
         else if (!users.containsKey(login))
@@ -81,6 +87,7 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
             if (!users.get(login).equals(passcode))
             {
                 connections.send(connectionId, createErrorFrame("Wrong password", ""));
+                activeUsers.remove(connectionId);
                 return;
             }
         }
@@ -106,6 +113,7 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         if (destination == null || subId == null)
         {
             connections.send(connectionId, createErrorFrame("Missing 'destination' or 'id' in SUBSCRIBE", receiptId));
+            activeUsers.remove(connectionId);
             return;
         }
 
@@ -130,6 +138,7 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         if (subId == null) 
         {
             connections.send(connectionId, createErrorFrame("Missing 'id' in UNSUBSCRIBE", receiptId));
+            activeUsers.remove(connectionId);
             return;
         }
 
@@ -152,6 +161,7 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         if (destination == null) 
         {
             connections.send(connectionId, createErrorFrame("Missing 'destination' in SEND", ""));
+            activeUsers.remove(connectionId);
             return;
         }
 
@@ -171,7 +181,11 @@ public class StompMessagingProtocolimp implements StompMessagingProtocol<frame> 
         messageToBroadcast.setBody(msg.getBody());
 
         // Now broadcast
-        ((StompConnections<frame>) connections).broadcast(destination.substring(1), messageToBroadcast);
+        if(!(((StompConnections<frame>) connections).broadcast(destination.substring(1), messageToBroadcast, connectionId)))
+        {
+            connections.send(connectionId, createErrorFrame("You must be subscribed to the channel", ""));
+            activeUsers.remove(connectionId);
+        }
 
         // If there's a receipt
         String receipt = msg.getHeader("receipt");

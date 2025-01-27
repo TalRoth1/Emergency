@@ -73,12 +73,17 @@ public class StompConnections<T> implements Connections<T> {
         }
         System.out.println("Unsubscribed " + connectionId + " from " + channel);
     }
-    public void broadcast(String channel, T message)
+    public boolean broadcast(String channel, T message, int connectionId)
     {
+        if(!topicSubscribers.containsKey(channel) || !topicSubscribers.get(channel).contains(connectionId))
+        {
+            return false;
+        }
         for (Integer connId : topicSubscribers.getOrDefault(channel, new CopyOnWriteArraySet<>()))
         {
             send(connId, message);
         }
+        return true;
     }
     
     public int size() 
